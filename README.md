@@ -24,7 +24,7 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 [![Perfil del terreno de 1,09 km trazado de noroeste a sureste pasando por el condominio, con su gráfica en el panel lateral](img/toposat-perfil.jpg)](https://lj2755.github.io/toposat/)
 
-*Perfil del terreno de 1,09 km de noroeste a sureste, pasando por el condominio (línea roja): subida acumulada de 35 m, bajada de 46 m y pendiente media de −1,0 %. La gráfica del panel muestra las cotas entre 2 118 y 2 145 m.*
+*Perfil del terreno de 1,09 km de noroeste a sureste, pasando por el condominio (línea roja), sobre un área de 98 ha con curvas cada 5 m coloreadas y rotuladas por cota: subida acumulada de 35 m, bajada de 46 m y pendiente media de −1,0 %. La gráfica del panel muestra las cotas entre 2 118 y 2 145 m.*
 
 ## Publicar en GitHub Pages
 

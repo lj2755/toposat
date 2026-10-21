@@ -570,18 +570,23 @@ function draw(){
   ['eDxf','eGeo','eXyz','bRedo'].forEach(id => $(id).disabled = false);
   if (areaPoly) fillPolyTable();
 }
-// Rótulos de cota sobre las curvas, girados según la dirección de la línea
+// Rótulos de cota sobre las curvas, girados según la dirección de la línea.
+// Se omiten las curvas muy cortas y los rótulos que quedarían demasiado cerca de otro.
 function labelContours(nLevels, iv, wM, hM){
-  const diag = Math.hypot(wM, hM), spacing = diag/2.5;
-  for (const c of contours){
-    if (nLevels > 15 && !c.index) continue;
-    const seg = c.ll.slice(1).map((p,i) => dist(c.ll[i], p)), len = seg.reduce((a,b)=>a+b, 0);
-    if (len < diag/10) continue;
+  const diag = Math.hypot(wM, hM), spacing = diag/2.5, minGap = diag/11, placed = [];
+  const byLen = contours.map(c => {
+    const seg = c.ll.slice(1).map((p,i) => dist(c.ll[i], p));
+    return {c, seg, len: seg.reduce((a,b)=>a+b, 0)};
+  }).sort((a,b) => (b.c.index - a.c.index) || (b.len - a.len));   // primero maestras y curvas largas
+  for (const {c, seg, len} of byLen){
+    if (len < diag/7) continue;
     const n = Math.max(1, Math.round(len/spacing));
     for (let k = 0; k < n; k++){
       let d = len*(k+.5)/n, i = 0; while (i < seg.length-1 && d > seg[i]) { d -= seg[i]; i++; }
       const a = c.ll[i], b2 = c.ll[i+1], f = seg[i] ? d/seg[i] : 0;
       const pos = [a[0]+(b2[0]-a[0])*f, a[1]+(b2[1]-a[1])*f];
+      if (placed.some(q => dist(q, pos) < minGap)) continue;
+      placed.push(pos);
       let ang = -Math.atan2(b2[0]-a[0], (b2[1]-a[1])*Math.cos(a[0]*rad)) * 180/Math.PI;
       if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
       L.marker(pos, {interactive:false, keyboard:false, icon: L.divIcon({className:'', iconSize:[0,0],
