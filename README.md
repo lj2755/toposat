@@ -4,9 +4,11 @@ Levantamiento topográfico en el navegador con modelos de elevación satelital (
 
 [![Vista aérea de la simulación 3D del Condominio Pontezuela sobre el terreno real](img/simulacion-aerea.png)](https://lj2755.github.io/toposat/simulacion.html)
 
+[![Vista en planta del condominio sobre la imagen satelital, con las casas, las vías, los árboles, el lindero y la zona de cesión](img/simulacion-planta.jpg)](https://lj2755.github.io/toposat/simulacion.html)
+
 [![Vista peatonal desde la entrada del condominio, subiendo por la vía interna con palmas y casas a ambos lados](img/simulacion-peatonal.jpg)](https://lj2755.github.io/toposat/simulacion.html)
 
-*Simulación 3D del Condominio Pontezuela: casas, vías, árboles y lindero sobre el terreno y la imagen satelital reales. Arriba, la vista aérea; abajo, la vista peatonal desde la portería subiendo por la vía interna hacia el kiosko comunal. [Abrir la simulación](https://lj2755.github.io/toposat/simulacion.html) · [Abrir TopoSat](https://lj2755.github.io/toposat/)*
+*Simulación 3D del Condominio Pontezuela: casas, vías, árboles y lindero sobre el terreno y la imagen satelital reales. De arriba abajo: vista aérea; vista en planta con el lindero (amarillo) y la cesión de protección ambiental (verde); y vista peatonal desde la portería subiendo por la vía interna hacia el kiosko comunal. [Abrir la simulación](https://lj2755.github.io/toposat/simulacion.html) · [Abrir TopoSat](https://lj2755.github.io/toposat/)*
 
 - **`index.html`**: TopoSat. Área por rectángulo o polígono, curvas de nivel, perfiles, puntos GNSS y exportación a DXF, GeoJSON y CSV (UTM WGS84).
 - **`simulacion.html`**: simulación 3D del Condominio Pontezuela sobre el terreno real (MAGNA-SIRGAS, origen Bogotá).
