@@ -65,11 +65,11 @@ button.on{background:var(--accent-2);border-color:var(--accent)}
   <label><input type="checkbox" id="lTraz" checked> Vías, lindero y cesión</label>
 
   <h2>Redes de agua (diseño previo)</h2>
-  <label><input type="checkbox" id="lSup" checked> <span class="sw" style="background:#1f6fb2"></span> Agua potable</label>
+  <label><input type="checkbox" id="lSup" checked> <span class="sw" style="background:#1f6fb2"></span> Agua potable, cisterna y bombas</label>
   <label><input type="checkbox" id="lNeg" checked> <span class="sw" style="background:#7a4a24"></span> Aguas negras</label>
   <label><input type="checkbox" id="lGri" checked> <span class="sw" style="background:#6f7f8f"></span> Aguas grises</label>
   <label><input type="checkbox" id="lLlu" checked> <span class="sw" style="background:#0f97a8"></span> Aguas lluvias</label>
-  <label><input type="checkbox" id="lPlanta" checked> <span class="sw" style="background:#2f7d4f"></span> Planta, cisterna y tanques de lluvia</label>
+  <label><input type="checkbox" id="lPlanta" checked> <span class="sw" style="background:#2f7d4f"></span> Planta de tratamiento y tanques de lluvia</label>
   <div class="note">Las tuberías van enterradas; aquí se dibujan sobre el terreno, más gruesas, para poder verlas. Las flechas indican el sentido del flujo.</div>
   <div class="row" style="margin-top:6px"><span style="width:92px">Plano CAD</span><input type="range" id="planOp" min="0" max="1" step="0.05" value="0"></div>
   <div class="row"><span style="width:92px">Exag. vertical</span><input type="range" id="exag" min="1" max="3" step="0.25" value="1"><b id="exagV">1×</b></div>
@@ -513,10 +513,10 @@ function buildWater(){
     }
   }
   // Cisterna enterrada y caseta de bombas junto a la portería
-  tank(rect(758,664,786,698), .25, 'Cisterna de agua potable', '25 m³ enterrada, dos compartimentos · ≈ 1 día de consumo máximo', new THREE.MeshLambertMaterial({color:0x1f6fb2}));
+  tank(rect(758,664,786,698), .25, 'Cisterna de agua potable', '25 m³ enterrada, dos compartimentos · ≈ 1 día de consumo máximo', new THREE.MeshLambertMaterial({color:0x1f6fb2}), groups.sup);
   { const c = rect(788,666,812,690).map(px2local), y0 = Math.min(...c.map(([x,z]) => heightAt(x,z)));
     const hut = new THREE.Group(); hut.add(prism(c, y0 - .3, y0 + 2.4, matWall), prism(c, y0 + 2.4, y0 + 2.6, matBase));
-    hut.traverse(o => o.userData = {water:{name:'Caseta de bombas', desc:'2 bombas de 2 HP (una de reserva) con variador y tanque hidroacumulador'}, center:c[0]}); P.add(hut); }
+    hut.traverse(o => o.userData = {water:{name:'Caseta de bombas', desc:'2 bombas de 2 HP (una de reserva) con variador y tanque hidroacumulador'}, center:c[0]}); groups.sup.add(hut); }
   // Tanque de agua lluvia de 2 m³ junto a cada casa nueva
   const rainMat = new THREE.MeshLambertMaterial({color:0x2e4a3a});
   for (const h of HOUSES){
@@ -530,10 +530,11 @@ function buildWater(){
   // Rótulos
   const tag = (px, text, color, h = 7) => { const [x, z] = px2local(px), sp = labelSprite(text, color); sp.position.set(x, heightAt(x,z) + h, z); P.add(sp); };
   tag([1015,490], 'Planta de tratamiento', '#2f7d4f', 8);
-  for (const [px, text] of [[[760,545], 'Colector de aguas lluvias'], [[1093,560], 'Desarenador y descarga']]){
-    const [x, z] = px2local(px), sp = labelSprite(text, '#0f97a8'); sp.scale.multiplyScalar(1.8); sp.position.set(x, heightAt(x,z) + 7, z); groups.llu.add(sp);
+  // Rótulos grandes de cada red (se ven con su capa)
+  for (const [px, text, color, grp] of [[[760,545], 'Colector de aguas lluvias', '#0f97a8', 'llu'], [[1093,560], 'Desarenador y descarga', '#0f97a8', 'llu'],
+                                        [[786,680], 'Cisterna y bombas', '#1f6fb2', 'sup'], [[728,300], 'Red de agua potable · PVC 2½″', '#1f6fb2', 'sup']]){
+    const [x, z] = px2local(px), sp = labelSprite(text, color); sp.scale.multiplyScalar(1.8); sp.position.set(x, heightAt(x,z) + 7, z); groups[grp].add(sp);
   }
-  tag([786,680], 'Cisterna y bombas', '#1f6fb2', 6);
 }
 
 // =================== Sol ===================
@@ -645,8 +646,10 @@ function loop(t){
   buildHouses(); buildTrees(); buildWater(); updateSun();
   // Enlace directo a una vista: simulacion.html#aguas, #lluvias, #planta o #peaton
   setView({'#aguas':'vAguas', '#planta':'vPlanta', '#peaton':'vPeaton'}[location.hash] || 'vAerea');
-  if (location.hash === '#lluvias'){            // solo la red de aguas lluvias, vista de cerca desde el suroccidente
-    for (const id of ['lSup','lNeg','lGri','lPlanta','lArb']){ $(id).checked = false; $(id).dispatchEvent(new Event('change')); }
+  // Vistas de una sola red: #potable, #negras, #grises o #lluvias (sin árboles y desde arriba, para ver las tuberías)
+  const SOLO = {'#potable':['lSup'], '#negras':['lNeg','lPlanta'], '#grises':['lGri','lPlanta'], '#lluvias':['lLlu']}[location.hash];
+  if (SOLO){
+    for (const id of ['lSup','lNeg','lGri','lLlu','lPlanta','lArb']){ $(id).checked = SOLO.includes(id); $(id).dispatchEvent(new Event('change')); }
     const [x, z] = px2local([660, 470]);
     camera.position.set(x - 52, 118, z + 64); controls.target.set(x - 10, 0, z - 2); controls.update();
   }
