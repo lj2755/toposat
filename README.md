@@ -22,6 +22,10 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 *Área de 1,1 × 0,9 km alrededor del condominio: curvas de nivel cada 5 m (maestras cada 25 m), sombreado hipsométrico y lectura de coordenadas y cota bajo el cursor. Cotas entre 2 113 y 2 172 m s.n.m.*
 
+[![Perfil del terreno de 1,09 km trazado de noroeste a sureste pasando por el condominio, con su gráfica en el panel lateral](img/toposat-perfil.jpg)](https://lj2755.github.io/toposat/)
+
+*Perfil del terreno de 1,09 km de noroeste a sureste, pasando por el condominio (línea roja): subida acumulada de 35 m, bajada de 46 m y pendiente media de −1,0 %. La gráfica del panel muestra las cotas entre 2 118 y 2 145 m.*
+
 ## Publicar en GitHub Pages
 
 ### Opción A: desde la página de GitHub (sin comandos)
