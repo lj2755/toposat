@@ -55,6 +55,7 @@ button.on{background:var(--accent-2);border-color:var(--accent)}
     <button id="vPlanta">Planta</button>
     <button id="vPeaton">Peatón</button>
     <button id="vAguas">Planta de agua</button>
+    <button id="vNoche">Noche</button>
   </div>
   <div class="note" id="walkHelp" style="display:none">Peatón: W/A/S/D o flechas para caminar, arrastra para mirar.</div>
 
@@ -69,13 +70,15 @@ button.on{background:var(--accent-2);border-color:var(--accent)}
   <label><input type="checkbox" id="lNeg" checked> <span class="sw" style="background:#7a4a24"></span> Aguas negras</label>
   <label><input type="checkbox" id="lGri" checked> <span class="sw" style="background:#6f7f8f"></span> Aguas grises</label>
   <label><input type="checkbox" id="lLlu" checked> <span class="sw" style="background:#0f97a8"></span> Aguas lluvias</label>
+  <label><input type="checkbox" id="lLuz" checked> <span class="sw" style="background:#f0a830"></span> Iluminación LED solar</label>
   <label><input type="checkbox" id="lPlanta" checked> <span class="sw" style="background:#2f7d4f"></span> Planta de tratamiento y tanques de lluvia</label>
   <div class="note">Las tuberías van enterradas; aquí se dibujan sobre el terreno, más gruesas, para poder verlas. Las flechas indican el sentido del flujo.</div>
   <div class="row" style="margin-top:6px"><span style="width:92px">Plano CAD</span><input type="range" id="planOp" min="0" max="1" step="0.05" value="0"></div>
   <div class="row"><span style="width:92px">Exag. vertical</span><input type="range" id="exag" min="1" max="3" step="0.25" value="1"><b id="exagV">1×</b></div>
 
-  <h2>Sol y sombras</h2>
-  <div class="row"><span style="width:92px">Hora</span><input type="range" id="hora" min="6" max="18" step="0.25" value="10"><b id="horaV">10:00</b></div>
+  <h2>Sol, sombras y noche</h2>
+  <div class="note">Mueve la hora después de las 6 p. m. o pulsa «Noche» para ver la iluminación solar encendida.</div>
+  <div class="row"><span style="width:92px">Hora</span><input type="range" id="hora" min="5" max="23" step="0.25" value="10"><b id="horaV">10:00</b></div>
   <div class="row"><span style="width:92px">Mes</span>
     <select id="mes" style="font:inherit;flex:1;padding:4px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--text)">
       <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option>
@@ -224,7 +227,7 @@ scene.add(sun, sun.target);
 
 const world = new THREE.Group(); scene.add(world);
 const groups = {casas:new THREE.Group(), exist:new THREE.Group(), arb:new THREE.Group(),
-  sup:new THREE.Group(), neg:new THREE.Group(), gri:new THREE.Group(), llu:new THREE.Group(), planta:new THREE.Group()};
+  sup:new THREE.Group(), neg:new THREE.Group(), gri:new THREE.Group(), llu:new THREE.Group(), planta:new THREE.Group(), luz:new THREE.Group()};
 Object.values(groups).forEach(g => world.add(g));
 
 let heights, NGRID, STEP, baseElev, terrainMesh, sat, texCanvas, texCtx, texture, planImg;
@@ -319,6 +322,7 @@ const matRoof = new THREE.MeshLambertMaterial({color:0xb4552f, side:THREE.Double
 const matRoofOld = new THREE.MeshLambertMaterial({color:0x8a6a55, side:THREE.DoubleSide});
 const matBase = new THREE.MeshLambertMaterial({color:0x9b958a});
 const matGlass = new THREE.MeshLambertMaterial({color:0x40566a});
+const matGlassLit = new THREE.MeshLambertMaterial({color:0x40566a, emissive:0xffc06a, emissiveIntensity:0});   // ventanas encendidas de noche
 const matTrunk = new THREE.MeshLambertMaterial({color:0x6b4f35});
 const matLeaf = new THREE.MeshLambertMaterial({color:0x3d6b2f});
 const matPalm = new THREE.MeshLambertMaterial({color:0x5c8a34, side:THREE.DoubleSide});
@@ -353,7 +357,7 @@ function windows(c, y0, floors, group){  // ventanas oscuras en las fachadas lar
       if (i % 3 === 0) continue;
       const t = i/(n+1), px = a[0]+(b[0]-a[0])*t, pz = a[1]+(b[1]-a[1])*t;
       const out = 0.06 / Math.hypot(px-cx, pz-cz);
-      const w = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.3), matGlass);
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.3), (Math.sin((px+pz)*12.9898 + f*7) * 43758.5453 % 1 + 1) % 1 > .45 ? matGlassLit : matGlass);
       w.position.set(px + (px-cx)*out, y0 + 1.5 + f*2.9, pz + (pz-cz)*out);
       w.rotation.y = -ang + Math.PI * ((k===0||k===3)?1:0);
       w.material.side = THREE.DoubleSide;
@@ -537,6 +541,77 @@ function buildWater(){
   }
 }
 
+// =================== Iluminación LED solar ===================
+// Mismas posiciones que el documento "Iluminación LED solar del Condominio Pontezuela" (píxeles del plano).
+const LUZ = {
+  vias:  {pts:[[358,174],[418,318],[189,492],[333,432],[476,492],[620,432],[686,174],[746,318],[668,522],[718,669]], h:4, r:9, panel:[1.0,.65], col:0xffc457,
+          info:{name:'Poste solar de vía', desc:'4 m · LED 30 W (≈ 4 500 lm, 3 000 K) · panel 100 Wp · batería LiFePO₄ 12,8 V 70 Ah · 100 % hasta las 10 p. m. y 50 % en la madrugada'}},
+  per:   {pts:[[247,130],[398,95],[546,56],[1122,234],[1122,389],[1111,544],[1103,692],[946,698],[791,697],[652,732],[501,716],[347,706],[190,699],[71,657],[123,510],[166,363],[193,211]],
+          h:3, r:6, panel:[.6,.45], col:0xff9a55, info:{name:'Luminaria solar perimetral', desc:'3 m · LED 15 W con sensor de movimiento · panel 40 Wp · batería 12,8 V 20 Ah'}},
+  bal:   {pts:[[714,161],[810,164],[905,168],[1001,171],[1097,174]], h:1, r:2.6, panel:[.35,.3], col:0xff8a2a,
+          info:{name:'Baliza ámbar (2 200 K)', desc:'1 m · LED 5 W orientado hacia el condominio · panel 20 Wp · la cesión ambiental queda sin luz'}},
+  plaza: {pts:[[918,566],[1032,566],[918,678],[1032,678]], h:4, r:6.5, col:0xffe2a0,
+          info:{name:'Poste de la plaza', desc:'4 m · LED 20 W · alimentado por el sistema solar central de la portería'}},
+};
+function glowTexture(){
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
+  const gr = g.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.35,'rgba(255,255,255,.55)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0,0,128,128); return new THREE.CanvasTexture(cv);
+}
+const GLOW = glowTexture(), nightMats = [];   // materiales que se encienden de noche
+function lightPool(x, z, r, color, base){
+  // Círculo de luz sobre el suelo (mezcla aditiva) y resplandor en la luminaria
+  const ys = [[0,0],[r,0],[-r,0],[0,r],[0,-r]].map(([dx,dz]) => heightAt(x+dx*.7, z+dz*.7));
+  const m = new THREE.MeshBasicMaterial({map:GLOW, color, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false});
+  const disk = new THREE.Mesh(new THREE.CircleGeometry(r, 32), m); disk.rotation.x = -Math.PI/2;
+  disk.position.set(x, Math.max(...ys) + .08, z); disk.renderOrder = 2; nightMats.push([m, .85]);
+  const sm = new THREE.SpriteMaterial({map:GLOW, color, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false});
+  const sp = new THREE.Sprite(sm); sp.scale.set(r*.32, r*.32, 1); sp.position.set(x, base, z); nightMats.push([sm, 1]);
+  return [disk, sp];
+}
+function buildLighting(){
+  const G = groups.luz, metal = new THREE.MeshLambertMaterial({color:0x5b6066}), cell = new THREE.MeshLambertMaterial({color:0x1d3f73, emissive:0x0b1b33});
+  for (const [key, t] of Object.entries(LUZ)){
+    const head = new THREE.MeshLambertMaterial({color:0xe9e4d8, emissive:t.col, emissiveIntensity:0}); nightMats.push([head, 1.4, 'emissive']);
+    for (const p of t.pts){
+      const [x, z] = px2local(p), y = heightAt(x, z), info = {water:t.info, center:[x, z]};
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(key === 'bal' ? .09 : .06, .08, t.h, 8), metal);
+      pole.position.set(x, y + t.h/2, z); pole.castShadow = true;
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(key === 'bal' ? .2 : .55, .12, key === 'bal' ? .2 : .28), head);
+      lamp.position.set(x, y + t.h - .05, z);
+      const parts = [pole, lamp];
+      if (t.panel){                                   // panel solar hacia el sur, inclinado 12°
+        const pn = new THREE.Mesh(new THREE.BoxGeometry(t.panel[0], .03, t.panel[1]), cell);
+        pn.position.set(x, y + t.h + .25, z); pn.rotation.x = 12*rad; pn.castShadow = true; parts.push(pn);
+      }
+      parts.forEach(o => { o.userData = info; G.add(o); });
+      lightPool(x, z, t.r, t.col, y + t.h - .1).forEach(o => G.add(o));
+    }
+  }
+  // Kiosko: 6 bombillas bajo la cubierta
+  { const [kx, kz] = px2local(KIOSKO), ky = heightAt(kx, kz), bulb = new THREE.MeshLambertMaterial({color:0xfff3d0, emissive:0xffe2a0, emissiveIntensity:0});
+    nightMats.push([bulb, 1.5, 'emissive']);
+    for (let i = 0; i < 6; i++){ const a = i*Math.PI/3, b = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), bulb);
+      b.position.set(kx + 1.4*Math.cos(a), ky + 2.5, kz + 1.4*Math.sin(a)); b.userData = {water:{name:'Iluminación del kiosko', desc:'6 bombillas LED de 8 W · sistema solar central'}, center:[kx,kz]}; G.add(b); }
+    lightPool(kx, kz, 4.5, 0xffe2a0, ky + 2.4).forEach(o => G.add(o)); }
+  // Portería: apliques, reflector del acceso y paneles del sistema central en el techo
+  for (const [p, r, name] of [[[728,612], 4, 'Aplique exterior de la portería · 20 W'], [[790,655], 4, 'Aplique exterior de la portería · 20 W'], [[700,712], 6.5, 'Reflector del acceso con sensor · 30 W']]){
+    const [x, z] = px2local(p), y = heightAt(x, z);
+    lightPool(x, z, r, 0xffe2a0, y + 2.6).forEach(o => { o.userData = {water:{name, desc:'Sistema solar central de la portería'}, center:[x,z]}; G.add(o); });
+  }
+  { const h = HOUSES.find(h => h.name === 'Caseta portería'), c = h.px.map(px2local), ys = c.map(([x,z]) => heightAt(x,z));
+    const roof = ys.reduce((a,b)=>a+b,0)/4 + .3 + 2.9 + .25;
+    for (let i = 0; i < 3; i++){
+      const [x0, z0] = px2local([736 + i*17, 618]), [x1, z1] = px2local([750 + i*17, 642]);
+      const pn = new THREE.Mesh(new THREE.BoxGeometry(Math.abs(x1-x0), .05, Math.abs(z1-z0)), cell);
+      pn.position.set((x0+x1)/2, roof + .35, (z0+z1)/2); pn.rotation.x = 12*rad; pn.castShadow = true;
+      pn.userData = {water:{name:'Sistema solar central · 3 paneles de 450 Wp', desc:'1,35 kWp en el techo de la portería · baterías LiFePO₄ 7,2 kWh · inversor híbrido 3 kVA · alimenta portería, kiosko, plaza, cámaras y control de acceso'}, center:[x0,z0]};
+      G.add(pn);
+    }
+  }
+}
+
 // =================== Sol ===================
 function updateSun(){
   const hour = +$('hora').value, month = +$('mes').value, doy = month*30.4 + 15;
@@ -547,8 +622,17 @@ function updateSun(){
   sun.position.set(d*Math.cos(elev)*Math.sin(az), d*Math.sin(elev), -d*Math.cos(elev)*Math.cos(az));
   sun.target.position.set(0, 0, 0);
   const k = Math.max(0, Math.sin(elev));
-  sun.intensity = 0.25 + 1.0*Math.min(1, k*1.6);
-  sun.color.setHSL(0.09, 0.6, 0.55 + 0.4*Math.min(1, k*2));
+  // Factor de noche: 0 de día, 1 cuando el sol está 6° bajo el horizonte
+  const night = Math.min(1, Math.max(0, (2 - elev/rad) / 8));
+  sun.intensity = (0.25 + 1.0*Math.min(1, k*1.6)) * (1 - night) + .1*night;
+  sun.color.setHSL(night > .5 ? .62 : 0.09, night > .5 ? .35 : 0.6, 0.55 + 0.4*Math.min(1, k*2));
+  if (night > .5) sun.position.set(120, 300, 160);           // luz de luna suave
+  hemi.intensity = .55 - .47*night;
+  const sky = new THREE.Color(0x9fc4e8).lerp(new THREE.Color(0x0b1322), night);
+  scene.background.copy(sky); scene.fog.color.copy(sky); document.body.style.background = document.documentElement.style.background = '#' + sky.getHexString();
+  const on = $('lLuz').checked ? night : 0;
+  for (const [m, k2, prop] of nightMats){ if (prop === 'emissive') m.emissiveIntensity = on*k2; else m.opacity = on*k2; }
+  matGlassLit.emissiveIntensity = night * .9;
   const h = Math.floor(hour), m = Math.round((hour-h)*60);
   $('horaV').textContent = `${h}:${String(m).padStart(2,'0')}`;
 }
@@ -556,7 +640,7 @@ function updateSun(){
 // =================== Cámara y vistas ===================
 let walking = false; const keys = {};
 function setView(v){
-  ['vAerea','vPlanta','vPeaton','vAguas'].forEach(id => $(id).classList.toggle('on', id === v));
+  ['vAerea','vPlanta','vPeaton','vAguas','vNoche'].forEach(id => $(id).classList.toggle('on', id === v));
   walking = v === 'vPeaton'; $('walkHelp').style.display = walking ? 'block' : 'none';
   controls.enabled = true;
   if (v === 'vAerea'){ camera.position.set(-90, 95, 150); controls.target.set(0, 0, 0); controls.maxPolarAngle = Math.PI*.495; }
@@ -595,7 +679,7 @@ canvas.addEventListener('pointerup', e => {
   if (!downAt || Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]) > 4) return;
   mouse.set(e.clientX/innerWidth*2 - 1, -e.clientY/innerHeight*2 + 1);
   ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects([groups.casas, groups.exist, groups.planta, groups.sup, groups.neg, groups.gri, groups.llu].filter(g => g.visible), true)
+  const hit = ray.intersectObjects([groups.casas, groups.exist, groups.planta, groups.sup, groups.neg, groups.gri, groups.llu, groups.luz].filter(g => g.visible), true)
     .find(h => h.object.userData && (h.object.userData.house || h.object.userData.water));
   const info = $('info');
   if (!hit){ info.style.display = 'none'; return; }
@@ -615,6 +699,15 @@ $('vAerea').onclick = () => setView('vAerea');
 $('vPlanta').onclick = () => setView('vPlanta');
 $('vPeaton').onclick = () => setView('vPeaton');
 $('vAguas').onclick = () => setView('vAguas');
+function nightView(){                 // noche: oculta las redes de agua para ver la luz y acerca la cámara
+  $('hora').value = 19.5;
+  for (const id of ['lSup','lNeg','lGri','lLlu','lPlanta']){ $(id).checked = false; $(id).dispatchEvent(new Event('change')); }
+  updateSun(); setView('vAerea'); $('vNoche').classList.add('on');
+  const [x, z] = px2local([640, 430]);
+  camera.position.set(x - 70, 72, z + 95); controls.target.set(x + 10, 0, z - 10); controls.update();
+}
+$('vNoche').onclick = nightView;
+$('lLuz').onchange = e => { groups.luz.visible = e.target.checked; updateSun(); };
 $('lSup').onchange = e => groups.sup.visible = e.target.checked;
 $('lNeg').onchange = e => groups.neg.visible = e.target.checked;
 $('lGri').onchange = e => groups.gri.visible = e.target.checked;
@@ -643,11 +736,13 @@ function loop(t){
   resize();
   try { await buildTerrain(); }
   catch (e) { $('loading').textContent = 'Error cargando datos: ' + e.message; return; }
-  buildHouses(); buildTrees(); buildWater(); updateSun();
+  buildHouses(); buildTrees(); buildWater(); buildLighting();
+  updateSun();
   // Enlace directo a una vista: simulacion.html#aguas, #lluvias, #planta o #peaton
   setView({'#aguas':'vAguas', '#planta':'vPlanta', '#peaton':'vPeaton'}[location.hash] || 'vAerea');
   // Vistas de una sola red: #potable, #negras, #grises o #lluvias (sin árboles y desde arriba, para ver las tuberías)
   const SOLO = {'#potable':['lSup'], '#negras':['lNeg','lPlanta'], '#grises':['lGri','lPlanta'], '#lluvias':['lLlu']}[location.hash];
+  if (location.hash === '#noche') nightView();                 // enlace directo: simulacion.html#noche
   if (SOLO){
     for (const id of ['lSup','lNeg','lGri','lLlu','lPlanta','lArb']){ $(id).checked = SOLO.includes(id); $(id).dispatchEvent(new Event('change')); }
     const [x, z] = px2local([660, 470]);
