@@ -19,6 +19,7 @@ Levantamiento topográfico en el navegador con modelos de elevación satelital (
 - **`index.html`**: TopoSat. Área por rectángulo o polígono, curvas de nivel, perfiles, puntos GNSS y exportación a DXF, GeoJSON y CSV (UTM WGS84).
 - **`simulacion.html`**: simulación 3D del Condominio Pontezuela sobre el terreno real (MAGNA-SIRGAS, origen Bogotá).
 - **`aguas/index.html`**: diseño previo del sistema de aguas del condominio.
+- **`iluminacion/index.html`**: diseño previo de la iluminación LED solar del condominio.
 - **`datos/`**: imagen satelital y elevación del sitio del condominio, ya descargadas para que la simulación cargue rápido.
 
 No necesita instalación ni servidor propio: son páginas estáticas.
@@ -71,6 +72,8 @@ Es un predimensionamiento: no reemplaza el diseño hidrosanitario firmado por un
 [![Simulación 3D de noche: postes solares en las vías y el perímetro, plaza iluminada, ventanas encendidas y paneles del sistema central en el techo de la portería](img/simulacion-noche.jpg)](https://lj2755.github.io/toposat/simulacion.html#noche)
 
 *El condominio a las 7:30 p. m. con la iluminación solar encendida. [Abrir la simulación de noche](https://lj2755.github.io/toposat/simulacion.html#noche).*
+
+**[Iluminación LED solar del Condominio Pontezuela](https://lj2755.github.io/toposat/iluminacion/)** (`iluminacion/index.html`): anteproyecto conceptual con el esquema nocturno sobre el plano, niveles de luz por zona, luminarias autónomas, sistema solar central de la portería, cuidado de la cesión ambiental, mantenimiento, normativa y memoria de cálculo. Es un predimensionamiento: los niveles de luz deben confirmarse con un cálculo fotométrico y la instalación requiere diseño eléctrico firmado y certificación RETIE.
 
 | | Diseño previo |
 |---|---|

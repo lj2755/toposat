@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Iluminación Solar Pontezuela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Memoria técnica de una columna, hermana del documento de aguas; el plano se muestra "de noche" para que se lea la luz. Ámbar = luz, azul = energía solar */
+:root{
+  --bg:#f6f6f2; --surface:#ffffff; --ink:#1c1f1a; --muted:#5f6359; --line:#e0e0d8;
+  --amber:#b8740f; --orange:#b4531a; --deep:#8a4a12; --solar:#2563a8; --ok:#2f7d4f; --warn:#9a5b12; --warn-bg:#fdf3e2;
+  --night:#0d1522; --accent:#b8740f;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13140f; --surface:#1b1d17; --ink:#e8e8e0; --muted:#a3a698; --line:#2f3229;
+    --amber:#f0b44a; --orange:#ec8a4c; --deep:#d99a55; --solar:#6aa7ea; --ok:#5cc28a; --warn:#e8a656; --warn-bg:#2a2216;
+    --accent:#f0b44a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13140f; --surface:#1b1d17; --ink:#e8e8e0; --muted:#a3a698; --line:#2f3229;
+  --amber:#f0b44a; --orange:#ec8a4c; --deep:#d99a55; --solar:#6aa7ea; --ok:#5cc28a; --warn:#e8a656; --warn-bg:#2a2216;
+  --accent:#f0b44a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--f-body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:32px 56px}
+main{max-width:980px;margin:0 auto;display:grid;gap:40px}
+.prose{max-width:68ch}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(28px,4.6vw,42px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:600;margin-bottom:12px}
+h3{font-size:18px;font-weight:600;margin:18px 0 6px}
+p{margin:0 0 12px}
+.eyebrow{font:500 12px/1 var(--f-data);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+header{display:grid;gap:12px}
+.meta{font:13px/1.5 var(--f-data);color:var(--muted)}
+.note{border-left:4px solid var(--warn);background:var(--warn-bg);padding:12px 16px;border-radius:0 8px 8px 0;font-size:15px;max-width:68ch}
+.note b{color:var(--warn)}
+section{display:grid;gap:4px}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:2px;min-width:0}
+.fig .k{font:500 12px/1.3 var(--f-data);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.fig .v{font:600 26px/1.15 var(--f-display);font-variant-numeric:tabular-nums}
+.fig .s{font-size:13px;color:var(--muted)}
+.fig.amber .v{color:var(--amber)} .fig.solar .v{color:var(--solar)} .fig.ok .v{color:var(--ok)}
+.sheet{background:var(--night);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sheet .wrap{position:relative;overflow-x:auto}
+.sheet .inner{position:relative;min-width:640px}
+.sheet img{display:block;width:100%;height:auto;filter:invert(1) hue-rotate(180deg) brightness(.55) contrast(.9)}
+.sheet svg{position:absolute;inset:0;width:100%;height:100%}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 18px;padding:12px 16px;border-top:1px solid var(--line);background:var(--surface);font-size:14px}
+.toolbar label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%}
+figcaption{padding:10px 16px 14px;font-size:13px;color:var(--muted);background:var(--surface)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:600;background:var(--bg)}
+th{font:600 12px/1.3 var(--f-data);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg)}
+td.n{font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+ul,ol{margin:0 0 12px;padding-left:22px} li{margin:4px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.card h3{margin-top:0}
+.tag{display:inline-block;font:500 11px/1 var(--f-data);text-transform:uppercase;letter-spacing:.06em;padding:4px 7px;border-radius:4px;color:var(--surface);background:var(--ok)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+summary{cursor:pointer;font-weight:600}
+.mono{font-family:var(--f-data);font-size:.92em}
+.profile{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:8px 0 4px;max-width:520px}
+.profile span{height:22px;border-radius:3px;background:var(--amber)}
+.profile-x{display:grid;grid-template-columns:repeat(12,1fr);max-width:520px;font:11px var(--f-data);color:var(--muted)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+</style>
+
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Diseño previo · Anteproyecto conceptual</div>
+    <h1>Iluminación LED solar del Condominio Pontezuela</h1>
+    <p class="prose" style="font-size:18px;color:var(--muted)">Alumbrado de vías internas, perímetro y zonas comunes con luminarias LED alimentadas por paneles solares, sin consumo de la red eléctrica.</p>
+    <div class="meta">Oriente antioqueño (jurisdicción de CORNARE) · 6,0805° N, 75,4227° O · Versión 1 · 21 de octubre de 2026</div>
+    <div class="note"><b>Alcance.</b> Es un predimensionamiento para decidir el sistema y pedir cotizaciones. Los niveles de luz deben confirmarse con un cálculo fotométrico (por ejemplo en DIALux) y la instalación requiere diseño eléctrico firmado y certificación RETIE.</div>
+  </header>
+
+  <section aria-labelledby="s-resumen">
+    <h2 id="s-resumen">Resumen en cifras</h2>
+    <div class="figs">
+      <div class="fig amber"><span class="k">Puntos de luz</span><span class="v">48</span><span class="s">32 solares autónomos + 16 del sistema central</span></div>
+      <div class="fig solar"><span class="k">Paneles solares</span><span class="v">3,1 kWp</span><span class="s">1,8 kWp en postes + 1,35 kWp en la portería</span></div>
+      <div class="fig amber"><span class="k">Energía por noche</span><span class="v">6,3 kWh</span><span class="s">≈ 2 290 kWh al año</span></div>
+      <div class="fig solar"><span class="k">Autonomía</span><span class="v">2–3 noches</span><span class="s">Sin sol, con baterías de litio LiFePO₄</span></div>
+      <div class="fig amber"><span class="k">Color de luz</span><span class="v">3 000 K</span><span class="s">Cálida; 2 200 K junto a la cesión ambiental</span></div>
+      <div class="fig ok"><span class="k">Consumo de red</span><span class="v">0 kWh</span><span class="s">La red queda solo como respaldo de la portería</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-plano">
+    <h2 id="s-plano">Esquema sobre el plano</h2>
+    <p class="prose">Las vías internas llevan postes solares de 4 m a lados alternos. El perímetro lleva luminarias de seguridad de 3 m con sensor de movimiento, excepto el tramo que da a la cesión de protección ambiental, que queda oscuro para no afectar la ronda hídrica; en su borde sur hay balizas bajas ámbar orientadas hacia el condominio. La portería, el kiosko y la plaza se alimentan desde un sistema solar central con paneles en el techo de la portería.</p>
+    <figure class="sheet" style="margin:0">
+      <div class="wrap"><div class="inner">
+        <img src="../plano.png" alt="Plano urbanístico del Condominio Pontezuela" width="1197" height="752">
+        <svg id="svg" viewBox="0 0 1197 752" role="img" aria-label="Esquema de iluminación solar sobre el plano: postes en las vías, luminarias perimetrales, balizas junto a la cesión y sistema central en la portería"></svg>
+      </div></div>
+      <div class="toolbar" role="group" aria-label="Capas del esquema">
+        <label><input type="checkbox" id="lyVias" checked> <span class="dot" style="background:#ffc457"></span> Vías internas</label>
+        <label><input type="checkbox" id="lyPer" checked> <span class="dot" style="background:#ff8d4a"></span> Perímetro</label>
+        <label><input type="checkbox" id="lyBal" checked> <span class="dot" style="background:#e07a26"></span> Balizas ámbar</label>
+        <label><input type="checkbox" id="lyCom" checked> <span class="dot" style="background:#ffe7a8"></span> Zonas comunes</label>
+        <label><input type="checkbox" id="lySol" checked> <span class="dot" style="background:#5aa6e8"></span> Sistema solar central</label>
+      </div>
+      <figcaption><a href="https://lj2755.github.io/toposat/simulacion.html#noche">Ver la iluminación de noche en la simulación 3D</a>. Ubicación esquemática. Los círculos muestran el área que ilumina cada punto. Antes de fijar cada poste hay que revisar la sombra de los árboles y palmas sobre su panel.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="s-criterios">
+    <h2 id="s-criterios">1. Niveles de luz por zona</h2>
+    <p class="prose">Valores objetivo de referencia para un conjunto residencial, tomados como guía del RETILAP. Todas las luminarias son de corte total (no envían luz hacia el cielo), con protección IP65 o superior.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Zona</th><th>Iluminancia media</th><th>Solución</th><th>Resultado estimado</th></tr></thead>
+      <tbody>
+        <tr><td>Vías internas (≈ 170 m)</td><td class="n">5–10 lx</td><td>10 postes de 4 m cada 18 m, a lados alternos</td><td class="n">≈ 12 lx (100 %) · 6 lx (50 %)</td></tr>
+        <tr><td>Perímetro (≈ 338 m iluminados)</td><td class="n">≈ 5 lx</td><td>17 luminarias de 3 m cada 20 m, sobre el cerramiento o en poste</td><td class="n">≈ 5,6 lx al detectar</td></tr>
+        <tr><td>Borde de la cesión (≈ 56 m)</td><td class="n">orientación</td><td>5 balizas ámbar de 1 m cada 12 m</td><td class="n">luz baja, solo hacia el sur</td></tr>
+        <tr><td>Plaza</td><td class="n">10–20 lx</td><td>4 postes de 4 m de 20 W</td><td class="n">≈ 15 lx</td></tr>
+        <tr><td>Kiosko comunal</td><td class="n">≈ 50 lx</td><td>6 bombillas LED de 8 W bajo la cubierta</td><td class="n">≈ 50 lx</td></tr>
+        <tr><td>Portería y acceso</td><td class="n">20–50 lx</td><td>2 apliques exteriores de 20 W, reflector con sensor de 30 W y 3 luminarias interiores de 10 W</td><td class="n">≈ 30 lx</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-autonomas">
+    <h2 id="s-autonomas">2. Luminarias solares autónomas</h2>
+    <p class="prose">Cada una trae su propio panel, batería de litio y controlador: no hay que abrir zanjas ni pasar cables, y si una falla las demás siguen funcionando. Se usan en vías, perímetro y balizas.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Tipo</th><th>Cant.</th><th>LED</th><th>Panel</th><th>Batería LiFePO₄</th><th>Altura</th><th>Energía por noche</th></tr></thead>
+      <tbody>
+        <tr><td>Poste de vía</td><td class="n">10</td><td class="n">30 W · ≈ 4 500 lm</td><td class="n">100 Wp</td><td class="n">12,8 V · 70 Ah</td><td class="n">4 m</td><td class="n">255 Wh</td></tr>
+        <tr><td>Perimetral con sensor</td><td class="n">17</td><td class="n">15 W · ≈ 2 000 lm</td><td class="n">40 Wp</td><td class="n">12,8 V · 20 Ah</td><td class="n">3 m</td><td class="n">65 Wh</td></tr>
+        <tr><td>Baliza ámbar 2 200 K</td><td class="n">5</td><td class="n">5 W</td><td class="n">20 Wp</td><td class="n">12,8 V · 10 Ah</td><td class="n">1 m</td><td class="n">32 Wh</td></tr>
+      </tbody>
+      <tfoot><tr><td>Total</td><td class="n">32</td><td class="n">580 W</td><td class="n">1,78 kWp</td><td></td><td></td><td class="n">3,8 kWh</td></tr></tfoot>
+    </table></div>
+    <div class="cols" style="margin-top:16px">
+      <div class="card">
+        <h3>Perfil nocturno de los postes de vía</h3>
+        <p style="margin:0;font-size:14px;color:var(--muted)">Potencia de 6 p. m. a 6 a. m. (la noche dura unas 12 horas todo el año a esta latitud).</p>
+        <div class="profile" aria-label="Perfil: 100 % de 6 a 10 p. m., 50 % de 10 p. m. a 5 a. m., 100 % de 5 a 6 a. m.">
+          <span></span><span></span><span></span><span></span>
+          <span style="height:11px;align-self:end;opacity:.6"></span><span style="height:11px;align-self:end;opacity:.6"></span><span style="height:11px;align-self:end;opacity:.6"></span><span style="height:11px;align-self:end;opacity:.6"></span><span style="height:11px;align-self:end;opacity:.6"></span><span style="height:11px;align-self:end;opacity:.6"></span><span style="height:11px;align-self:end;opacity:.6"></span>
+          <span></span>
+        </div>
+        <div class="profile-x"><span>6p</span><span></span><span></span><span></span><span>10p</span><span></span><span></span><span></span><span>2a</span><span></span><span></span><span>5a</span></div>
+        <p style="margin-top:10px;font-size:14px">100 % hasta las 10 p. m., 50 % el resto de la madrugada y 100 % de nuevo antes del amanecer. Con sensor de movimiento, sube al 100 % cuando pasa alguien.</p>
+      </div>
+      <div class="card">
+        <h3>Ubicación de los paneles</h3>
+        <ul style="font-size:15px">
+          <li>Orientados hacia el sur con una inclinación de 10 a 15°, suficiente para que la lluvia los limpie.</li>
+          <li>Sin sombra entre las 9 a. m. y las 3 p. m.: varios puntos del plano quedan cerca de árboles y palmas, y conviene moverlos unos metros o podar.</li>
+          <li>Postes de acero galvanizado con base de concreto; luminaria con protección IP66 e IK08 contra golpes.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-central">
+    <h2 id="s-central">3. Sistema solar central (portería)</h2>
+    <p class="prose">Las zonas comunes concentran varias cargas, así que es más eficiente un solo sistema: paneles en el techo de la portería, baterías e inversor en el cuarto técnico, y circuitos enterrados hacia la plaza y el kiosko. También alimenta las cámaras y el control de acceso, que necesitan energía las 24 horas.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Carga</th><th>Potencia</th><th>Horas</th><th>Energía diaria</th></tr></thead>
+      <tbody>
+        <tr><td>Kiosko: 6 × 8 W</td><td class="n">48 W</td><td class="n">4 h</td><td class="n">192 Wh</td></tr>
+        <tr><td>Plaza: 4 postes × 20 W</td><td class="n">80 W</td><td class="n">5 h + 7 h al 30 %</td><td class="n">568 Wh</td></tr>
+        <tr><td>Portería exterior: 2 × 20 W</td><td class="n">40 W</td><td class="n">12 h</td><td class="n">480 Wh</td></tr>
+        <tr><td>Reflector del acceso con sensor</td><td class="n">30 W</td><td class="n">≈ 1 h</td><td class="n">30 Wh</td></tr>
+        <tr><td>Portería interior: 3 × 10 W</td><td class="n">30 W</td><td class="n">12 h</td><td class="n">360 Wh</td></tr>
+        <tr><td>Cámaras de seguridad: 4 × 5 W</td><td class="n">20 W</td><td class="n">24 h</td><td class="n">480 Wh</td></tr>
+        <tr><td>Control de acceso y citofonía</td><td class="n">15 W</td><td class="n">24 h</td><td class="n">360 Wh</td></tr>
+      </tbody>
+      <tfoot><tr><td>Total</td><td class="n">263 W</td><td></td><td class="n">2,47 kWh/día</td></tr></tfoot>
+    </table></div>
+    <div class="tbl" style="margin-top:12px"><table>
+      <thead><tr><th>Equipo</th><th>Predimensionamiento</th><th>Comentario</th></tr></thead>
+      <tbody>
+        <tr><td>Paneles</td><td class="n">3 × 450 Wp = 1,35 kWp</td><td>Se necesitan ≈ 1,04 kWp con 3,5 horas de sol pico (mes menos soleado) y 80 % de rendimiento; el resto es margen. Ocupan ≈ 6,6 m² del techo.</td></tr>
+        <tr><td>Baterías</td><td class="n">LiFePO₄ 48 V · 150 Ah (7,2 kWh)</td><td>Dos días de autonomía con 90 % de descarga útil. Vida de más de 3 000 ciclos (8 a 10 años).</td></tr>
+        <tr><td>Inversor-cargador</td><td class="n">Híbrido 3 kVA · 48 V</td><td>Con regulador MPPT y entrada de red como respaldo automático para varios días nublados seguidos.</td></tr>
+        <tr><td>Circuitos</td><td class="n">120 V · 2 × 12 AWG</td><td>En ducto enterrado: hacia la plaza (≈ 25 m) y hacia el kiosko por el andén de la vía oriental (≈ 70 m). Caída de tensión menor al 1 %.</td></tr>
+        <tr><td>Control</td><td class="n">reloj + fotocelda</td><td>Encendido al anochecer y perfiles por circuito; monitoreo del estado de las baterías desde el celular.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-ambiente">
+    <h2 id="s-ambiente">4. Cuidado de la cesión ambiental y del cielo nocturno</h2>
+    <ul class="prose">
+      <li><b>Sin luminarias dentro de la cesión</b> ni en el tramo del perímetro que da a la ronda hídrica (≈ 76 m).</li>
+      <li><b>Luz cálida:</b> 3 000 K en todo el condominio y 2 200 K (ámbar) junto a la cesión, porque la luz blanca y azulada desorienta insectos, aves y murciélagos.</li>
+      <li><b>Corte total:</b> ninguna luminaria emite por encima de la horizontal, y las balizas iluminan solo hacia el sur.</li>
+      <li><b>Atenuación en la madrugada</b> y sensores de movimiento en el perímetro, para que haya luz cuando se necesita y no toda la noche.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="s-mant">
+    <h2 id="s-mant">5. Operación y mantenimiento</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Tarea</th><th>Frecuencia</th></tr></thead>
+      <tbody>
+        <tr><td>Limpiar paneles (agua y paño suave)</td><td>Cada 3 a 6 meses, o después de temporadas secas con polvo</td></tr>
+        <tr><td>Revisar sombras: podar ramas sobre los paneles</td><td>Cada 6 meses</td></tr>
+        <tr><td>Revisar el estado de las baterías en el monitoreo</td><td>Mensual</td></tr>
+        <tr><td>Cambio de baterías de las luminarias autónomas</td><td>Cada 8 a 10 años</td></tr>
+        <tr><td>Vida útil del LED</td><td>Más de 50 000 horas (unos 11 años a 12 horas por noche)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-norma">
+    <h2 id="s-norma">Normativa e incentivos</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Norma</th><th>Tema</th></tr></thead>
+      <tbody>
+        <tr><td>RETIE</td><td>Reglamento técnico de instalaciones eléctricas: diseño firmado por un profesional con matrícula y certificación de la instalación.</td></tr>
+        <tr><td>RETILAP</td><td>Reglamento técnico de iluminación y alumbrado público: niveles de luz y requisitos de las luminarias.</td></tr>
+        <tr><td>NTC 2050</td><td>Código eléctrico colombiano: conductores, protecciones y puesta a tierra.</td></tr>
+        <tr><td>Ley 1715 de 2014 y Ley 2099 de 2021</td><td>Incentivos tributarios para energías renovables (deducción en renta, exclusión de IVA y depreciación acelerada), con certificación de la UPME.</td></tr>
+        <tr><td>Resolución CREG 174 de 2021</td><td>Solo aplica si el sistema de la portería se conecta a la red para entregar excedentes.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-pasos">
+    <h2 id="s-pasos">Próximos pasos</h2>
+    <ol class="prose">
+      <li><b>Cálculo fotométrico</b> con las luminarias que se coticen, para fijar la separación definitiva de los postes.</li>
+      <li><b>Estudio de sombras</b> en sitio: confirmar que cada panel recibe sol directo de 9 a. m. a 3 p. m.</li>
+      <li><b>Cotizar</b> las luminarias autónomas con fichas técnicas y garantía de batería de al menos 5 años.</li>
+      <li><b>Diseño eléctrico</b> del sistema central firmado por un ingeniero electricista, y certificación RETIE.</li>
+      <li><b>Solicitar los beneficios de la Ley 1715</b> ante la UPME antes de comprar los equipos.</li>
+    </ol>
+  </section>
+
+  <details>
+    <summary>Memoria de cálculo resumida</summary>
+    <div class="prose mono" style="font-size:13.5px;line-height:1.75;margin-top:10px">
+      Recurso solar de diseño: 3,5 h de sol pico (mes menos soleado) · noche ≈ 12 h todo el año (6° N)<br>
+      Poste de vía: 30 W × 5 h + 15 W × 7 h = 255 Wh/noche → panel = 255 / (3,5 × 0,75) ≈ 97 Wp → 100 Wp · batería = 255 × 3 / 0,9 ≈ 850 Wh → 12,8 V 70 Ah<br>
+      Iluminancia en vía: E = Φ·CU·FM / (S·W) = 4 500 × 0,4 × 0,8 / (18 × 6,6) ≈ 12 lx<br>
+      Perimetral: 4,5 W × 12 h + 10,5 Wh por detecciones ≈ 65 Wh → 40 Wp · 12,8 V 20 Ah · E = 2 000 × 0,35 × 0,8 / (20 × 5) ≈ 5,6 lx<br>
+      Baliza: 5 W × 4 h + 1,5 W × 8 h = 32 Wh → 20 Wp · 12,8 V 10 Ah<br>
+      Central: 2 470 Wh / 0,85 = 2 906 Wh → paneles = 2 906 / (3,5 × 0,8) ≈ 1 038 Wp → 1 350 Wp · baterías = 2 906 × 2 / 0,9 ≈ 6,5 kWh → 7,2 kWh<br>
+      Total: 10 × 255 + 17 × 65 + 5 × 32 + 2 470 ≈ 6 280 Wh/noche ≈ 2 290 kWh/año · paneles = 1 000 + 680 + 100 + 1 350 ≈ 3,1 kWp
+    </div>
+  </details>
+
+  <footer>Preparado con TopoSat a partir del plano urbanístico del condominio. Complementa el diseño previo del sistema de aguas. Valores aproximados para un diseño previo.</footer>
+</main>
+
+<script>
+// Puntos en coordenadas de píxel del plano (1197 × 752)
+const VIAS = [[358,174],[418,318],[189,492],[333,432],[476,492],[620,432],[686,174],[746,318],[668,522],[718,669]];
+const PER  = [[247,130],[398,95],[546,56],[1122,234],[1122,389],[1111,544],[1103,692],[946,698],[791,697],[652,732],[501,716],[347,706],[190,699],[71,657],[123,510],[166,363],[193,211]];
+const BAL  = [[714,161],[810,164],[905,168],[1001,171],[1097,174]];
+const PLAZA = [[918,566],[1032,566],[918,678],[1032,678]];
+const KIOSKO = [722,122];
+
+const NS = 'http://www.w3.org/2000/svg', svg = document.getElementById('svg'), groups = {};
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+const defs = el('defs', {}, svg);
+function glow(id, color){ const g = el('radialGradient', {id}, defs);
+  el('stop', {offset:'0%', 'stop-color':color, 'stop-opacity':.75}, g); el('stop', {offset:'55%', 'stop-color':color, 'stop-opacity':.28}, g); el('stop', {offset:'100%', 'stop-color':color, 'stop-opacity':0}, g); }
+glow('gV', '#ffc457'); glow('gP', '#ff8d4a'); glow('gB', '#e07a26'); glow('gC', '#ffe7a8');
+['halos','sol','bal','per','vias','com','labels'].forEach(k => { groups[k] = el('g', {}, svg); });
+function text(x, y, s, g, o = {}){
+  const t = el('text', {x, y, 'text-anchor': o.anchor || 'middle', 'font-family':'IBM Plex Sans, system-ui, sans-serif', 'font-size': o.size || 13,
+    'font-weight': o.weight || 600, fill: o.fill || '#fff', stroke:'#0d1522', 'stroke-width':4, 'paint-order':'stroke', 'stroke-linejoin':'round'}, g);
+  t.textContent = s; return t;
+}
+function light(p, r, grad, color, layer, size = 4.5){
+  const h = el('circle', {cx:p[0], cy:p[1], r, fill:`url(#${grad})`}, groups.halos); h.dataset.layer = layer;
+  el('circle', {cx:p[0], cy:p[1], r:size, fill:color, stroke:'#fff', 'stroke-width':1.2}, groups[layer]);
+}
+// Vías: halo de ≈ 9 m · Perímetro: ≈ 6 m · Balizas: ≈ 3 m
+VIAS.forEach(p => light(p, 72, 'gV', '#ffc457', 'vias', 5));
+PER.forEach(p => light(p, 48, 'gP', '#ff8d4a', 'per', 4));
+BAL.forEach(p => light(p, 24, 'gB', '#e07a26', 'bal', 3));
+// Zonas comunes
+PLAZA.forEach(p => light(p, 46, 'gC', '#ffe7a8', 'com', 4));
+for (let i = 0; i < 6; i++){ const a = i*Math.PI/3; light([KIOSKO[0] + 11*Math.cos(a), KIOSKO[1] + 11*Math.sin(a)], 22, 'gC', '#ffe7a8', 'com', 2.5); }
+[[728,612],[790,655]].forEach(p => light(p, 34, 'gC', '#ffe7a8', 'com', 3.5));
+light([700,712], 40, 'gC', '#ffe7a8', 'com', 3.5);
+// Sistema central: paneles en el techo de la portería y circuitos
+const S = groups.sol;
+for (let i = 0; i < 3; i++) el('rect', {x:736 + i*17, y:618, width:14, height:24, fill:'#2563a8', stroke:'#9cc8f5', 'stroke-width':1}, S);
+const circ = pts => el('polyline', {points: pts.map(p => p.join(',')).join(' '), fill:'none', stroke:'#5aa6e8', 'stroke-width':2, 'stroke-dasharray':'6 4'}, S);
+circ([[790,632],[905,632],[905,566],[918,566]]); circ([[905,632],[905,678],[918,678]]); circ([[918,566],[1032,566]]); circ([[918,678],[1032,678]]);
+circ([[745,612],[738,560],[740,440],[740,140],[733,127]]);
+circ([[740,655],[700,712]]);
+// Rótulos
+const L = groups.labels;
+text(764, 600, 'Sistema solar central · 1,35 kWp', L, {fill:'#9cc8f5', size:12});
+text(975, 625, 'Plaza', L, {fill:'#ffe7a8', size:12});
+text(722, 96, 'Kiosko', L, {fill:'#ffe7a8', size:12});
+text(905, 140, 'Cesión: sin luz · balizas ámbar al borde', L, {fill:'#e8a35a', size:12});
+text(560, 470, 'postes de vía 4 m · 30 W', L, {fill:'#ffc457', size:12});
+text(300, 735, 'perímetro 3 m · 15 W con sensor', L, {fill:'#ff8d4a', size:12});
+
+const LAYERS = {lyVias:'vias', lyPer:'per', lyBal:'bal', lyCom:'com', lySol:'sol'};
+function applyLayers(){
+  for (const id in LAYERS){ const on = document.getElementById(id).checked, k = LAYERS[id];
+    groups[k].style.display = on ? '' : 'none';
+    groups.halos.querySelectorAll(`[data-layer="${k}"]`).forEach(h => h.style.display = on ? '' : 'none'); }
+}
+for (const id in LAYERS) document.getElementById(id).addEventListener('change', applyLayers);
+</script>
+
+</body>
+</html>
