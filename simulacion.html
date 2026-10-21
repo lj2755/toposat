@@ -188,7 +188,13 @@ async function mosaic(z, bounds, url, local){
 
 // =================== Escena ===================
 const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas, antialias:true}); }
+catch (e) {
+  document.getElementById('loading').innerHTML = 'Este navegador no tiene activados los gráficos 3D (WebGL).<br>' +
+    'Abre la página en Chrome, Edge, Firefox o Safari actualizados, o activa la aceleración por hardware en la configuración del navegador.';
+  throw e;
+}
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
