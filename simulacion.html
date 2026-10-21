@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación Condominio Pontezuela</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+/* Escena 3D a pantalla completa con panel flotante; tonos verde-tierra del paisaje antioqueño */
+:root{ --sky:#9fc4e8; --panel:rgba(255,255,255,.94); --text:#1d2420; --muted:#5d6862; --line:#dfe3e0; --accent:#2f6b4f; --accent-2:#e9f2ed; --veil:rgba(13,22,18,.8); --on-veil:#ffffff; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --panel:rgba(26,32,29,.94); --text:#e5ebe7; --muted:#9aa69f; --line:#2c3531; --accent:#6cc79a; --accent-2:#20302a; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --panel:rgba(26,32,29,.94); --text:#e5ebe7; --muted:#9aa69f; --line:#2c3531; --accent:#6cc79a; --accent-2:#20302a; color-scheme:dark; }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--sky);color:var(--text);
+  font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#c{position:fixed;inset:0;display:block}
+#panel{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:calc(12px + env(safe-area-inset-left,0px));width:300px;max-height:calc(100% - 24px);overflow:auto;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 4px 20px rgba(0,0,0,.18);backdrop-filter:blur(6px)}
+h1{font-size:16px;margin:0}
+.sub{color:var(--muted);font-size:12px;margin:2px 0 8px}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 6px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+label{display:flex;gap:6px;align-items:center}
+input[type=range]{flex:1;accent-color:var(--accent)}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:8px;padding:6px 10px}
+button:hover{border-color:var(--accent)}
+button.on{background:var(--accent-2);border-color:var(--accent)}
+#info{font-size:12px;background:var(--accent-2);border-radius:8px;padding:8px;display:none;margin-top:8px}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--veil);color:var(--on-veil);padding:16px;text-align:center;font-size:15px;z-index:10}
+#toggle{display:none}
+.note{font-size:11px;color:var(--muted);margin-top:8px}
+@media (max-width:640px){
+  #panel{width:auto;right:calc(12px + env(safe-area-inset-right,0px));top:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));max-height:45%}
+  #panel.min > :not(#head){display:none!important}
+  #toggle{display:inline-block}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="loading">Cargando terreno e imágenes satelitales…</div>
+<div id="panel">
+  <div id="head" class="row" style="justify-content:space-between;margin:0">
+    <div><h1>Condominio Pontezuela</h1><div class="sub">Simulación 3D sobre terreno real · MAGNA-SIRGAS Bogotá</div></div>
+    <button id="toggle">☰</button>
+  </div>
+
+  <h2>Vista</h2>
+  <div class="row">
+    <button id="vAerea" class="on">Aérea</button>
+    <button id="vPlanta">Planta</button>
+    <button id="vPeaton">Peatón</button>
+  </div>
+  <div class="note" id="walkHelp" style="display:none">Peatón: W/A/S/D o flechas para caminar, arrastra para mirar.</div>
+
+  <h2>Capas</h2>
+  <label><input type="checkbox" id="lCasas" checked> Casas proyectadas</label>
+  <label><input type="checkbox" id="lExist" checked> Construcciones existentes</label>
+  <label><input type="checkbox" id="lArb" checked> Árboles y palmas</label>
+  <label><input type="checkbox" id="lTraz" checked> Vías, lindero y cesión</label>
+  <div class="row" style="margin-top:6px"><span style="width:92px">Plano CAD</span><input type="range" id="planOp" min="0" max="1" step="0.05" value="0"></div>
+  <div class="row"><span style="width:92px">Exag. vertical</span><input type="range" id="exag" min="1" max="3" step="0.25" value="1"><b id="exagV">1×</b></div>
+
+  <h2>Sol y sombras</h2>
+  <div class="row"><span style="width:92px">Hora</span><input type="range" id="hora" min="6" max="18" step="0.25" value="10"><b id="horaV">10:00</b></div>
+  <div class="row"><span style="width:92px">Mes</span>
+    <select id="mes" style="font:inherit;flex:1;padding:4px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--text)">
+      <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option>
+      <option value="4">Mayo</option><option value="5" selected>Junio</option><option value="6">Julio</option><option value="7">Agosto</option>
+      <option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+    </select></div>
+
+  <div id="info"></div>
+  <div class="note" id="stats"></div>
+  <div class="note">Haz clic en una casa para ver sus datos. Terreno: SRTM (~30 m), así que las pendientes son aproximadas; las casas se asientan sobre una plataforma según el terreno.</div>
+  <div class="note">Imágenes © Esri, Maxar, Earthstar Geographics · Elevación: AWS Terrain Tiles (SRTM).</div>
+</div>
+
+<script>
+// =================== Georreferenciación del plano ===================
+// Malla del plano: línea N 1 164 325 en y=349 px, línea E 851 050 en x=329 px, 7.98 px por metro.
+// Confirmado con las coordenadas de la "primera casa" (Casa 16) del documento PL-CONDOMINIO PONTEZUELA_URB.
+const PXM = 7.98, E_REF = 851050, X_REF = 329, N_REF = 1164325, Y_REF = 349;
+const px2plane = ([x, y]) => [E_REF + (x - X_REF) / PXM, N_REF - (y - Y_REF) / PXM];
+const PLAN_W = 1197, PLAN_H = 752;
+
+// Proyección transversa de Mercator — MAGNA-SIRGAS / Colombia Bogotá zone (EPSG:3116)
+const rad = Math.PI / 180, A = 6378137, F = 1 / 298.257222101, E2 = F * (2 - F), EP2 = E2 / (1 - E2);
+const LAT0 = 4.596200416666666 * rad, LON0 = -74.07750791666666, FE = 1000000, FN = 1000000;
+const Marc = p => A * ((1 - E2/4 - 3*E2**2/64 - 5*E2**3/256) * p - (3*E2/8 + 3*E2**2/32 + 45*E2**3/1024) * Math.sin(2*p)
+  + (15*E2**2/256 + 45*E2**3/1024) * Math.sin(4*p) - (35*E2**3/3072) * Math.sin(6*p));
+const M0 = Marc(LAT0);
+function geo2plane(lat, lon){
+  const p = lat*rad, l = (lon - LON0)*rad, N = A/Math.sqrt(1 - E2*Math.sin(p)**2), T = Math.tan(p)**2, C = EP2*Math.cos(p)**2, Aa = Math.cos(p)*l;
+  return [FE + N*(Aa + (1-T+C)*Aa**3/6 + (5-18*T+T*T+72*C-58*EP2)*Aa**5/120),
+          FN + Marc(p) - M0 + N*Math.tan(p)*(Aa*Aa/2 + (5-T+9*C+4*C*C)*Aa**4/24 + (61-58*T+T*T+600*C-330*EP2)*Aa**6/720)];
+}
+function plane2geo(E, Nn){
+  const e1 = (1 - Math.sqrt(1-E2)) / (1 + Math.sqrt(1-E2)), M = M0 + (Nn - FN);
+  const mu = M / (A*(1 - E2/4 - 3*E2**2/64 - 5*E2**3/256));
+  const p1 = mu + (3*e1/2 - 27*e1**3/32)*Math.sin(2*mu) + (21*e1**2/16 - 55*e1**4/32)*Math.sin(4*mu) + (151*e1**3/96)*Math.sin(6*mu);
+  const N1 = A/Math.sqrt(1 - E2*Math.sin(p1)**2), T1 = Math.tan(p1)**2, C1 = EP2*Math.cos(p1)**2;
+  const R1 = A*(1-E2)/(1 - E2*Math.sin(p1)**2)**1.5, D = (E - FE)/N1;
+  const lat = p1 - (N1*Math.tan(p1)/R1)*(D*D/2 - (5+3*T1+10*C1-4*C1*C1-9*EP2)*D**4/24 + (61+90*T1+298*C1+45*T1*T1-252*EP2-3*C1*C1)*D**6/720);
+  const lon = (D - (1+2*T1+C1)*D**3/6 + (5-2*C1+28*T1-3*C1*C1+8*EP2+24*T1*T1)*D**5/120)/Math.cos(p1);
+  return [lat/rad, LON0 + lon/rad];
+}
+
+// Centro de la escena (aprox. centro del plano)
+const EC = 851084, NC = 1164320;
+const HALF = 350;                                   // la escena cubre 700 × 700 m
+const plane2local = ([E, N]) => [E - EC, -(N - NC)]; // x = este, z = sur
+const px2local = p => plane2local(px2plane(p));
+
+// =================== Datos digitalizados del plano ===================
+const dms = (d, m, s) => d + m/60 + s/3600;
+const casa16 = [[dms(6,4,48.69), -dms(75,25,21.85)], [dms(6,4,48.70), -dms(75,25,21.41)],
+                [dms(6,4,48.39), -dms(75,25,21.40)], [dms(6,4,48.41), -dms(75,25,21.85)]]
+  .map(([la, lo]) => plane2local(geo2plane(la, lo)));
+const rect = (x0, y0, x1, y1) => [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+const HOUSES = [
+  {name:'Casa 2',  px:rect(770,440,905,515), area:194.86, floors:2},
+  {name:'Casa 3',  px:rect(770,355,905,425), area:194.86, floors:2},
+  {name:'Casa 4',  px:rect(770,265,905,345), area:194.86, floors:2},
+  {name:'Casa 5',  px:rect(770,165,905,245), area:194.86, floors:2},
+  {name:'Casa 6',  px:rect(565,92,668,150),  area:127.89, floors:2},
+  {name:'Casa 7',  px:rect(562,208,665,292), area:127.89, floors:2},
+  {name:'Casa 8',  px:rect(562,340,665,410), area:127.89, floors:2},
+  {name:'Casa 9',  px:rect(442,340,540,410), area:127.89, floors:2},
+  {name:'Casa 10', px:rect(445,230,540,312), area:127.89, floors:2},
+  {name:'Casa 11', px:rect(445,128,545,198), area:127.89, floors:2},
+  {name:'Casa 12', px:rect(215,170,340,222), area:171.78, floors:2},
+  {name:'Casa 13', px:rect(225,238,335,320), area:127.89, floors:2},
+  {name:'Casa 14', px:rect(215,340,330,415), area:127.89, floors:2},
+  {name:'Casa 15', px:rect(505,500,630,585), area:127.89, floors:2},
+  {name:'Casa 16', local:casa16,             area:127.89, floors:2, note:'Coordenadas tomadas del documento (primera casa)'},
+  {name:'Casa 17', px:rect(415,520,495,635), area:127.89, floors:2},
+  {name:'Casa 18', px:rect(310,515,370,615), area:127.89, floors:2},
+  {name:'Casa 19', px:rect(232,515,300,615), area:127.89, floors:2},
+  {name:'Casa 20', px:rect(152,525,214,640), area:127.89, floors:2},
+  {name:'Casa existente 1', px:[[758,531],[838,540],[828,622],[750,615]], floors:1, existing:true},
+  {name:'Casa existente 2', px:rect(928,205,1010,405), floors:1, existing:true},
+  {name:'Casa existente 2 (ala este)', px:rect(1050,195,1117,400), floors:1, existing:true},
+  {name:'Casa existente 2 (conexión)', px:rect(1010,205,1050,240), floors:1, existing:true, flat:true},
+  {name:'Caseta portería', px:rect(728,612,790,655), floors:1, flat:true},
+];
+const LOT = [[190,138],[240,118],[330,96],[395,80],[470,58],[555,37],[665,3],[760,5],[900,28],[935,22],[1127,22],[1127,697],
+  [1100,705],[1040,708],[960,708],[870,712],[745,710],[700,748],[660,748],[580,744],[530,737],[497,731],[440,723],[400,720],
+  [340,718],[275,718],[215,712],[140,703],[107,702],[48,692],[88,553],[115,497],[125,420],[150,360],[160,300],[175,232],[185,160]];
+const CESION = [[670,3],[760,5],[900,28],[935,22],[1127,22],[1127,165],[678,150]];
+const PLAZA = [[905,553],[1045,560],[1045,690],[905,690]];
+const ROADS = [
+  [[388,150],[388,415],[398,445],[425,462]],
+  [[160,462],[690,462],[706,455]],
+  [[716,150],[716,420],[706,455],[697,500],[683,700],[678,752]],
+];
+const ROAD_W = 6.6;
+const TREES = [[257,132],[289,131],[356,89],[400,102],[414,87],[462,87],[530,70],[189,186],[187,212],[176,265],[172,287],[172,310],
+  [162,356],[150,391],[150,425],[189,412],[410,418],[395,496],[487,498],[925,290],[916,453],[982,441],[1090,461],[942,536],[972,536],
+  [1002,536],[1027,536],[1050,538],[1075,563],[1077,588],[1080,623],[1080,646],[632,688]];
+const PALMS = [[437,147],[429,205],[330,320],[416,307],[767,157],[670,187],[760,240],[667,307],[759,327],[212,508],[310,503],
+  [665,413],[750,436],[657,508],[745,521],[647,601]];
+const KIOSKO = [722,122];
+
+// =================== Elevación (Terrarium) e imágenes (Esri) ===================
+const lon2px = (lon, z) => (lon + 180) / 360 * 256 * 2**z;
+const lat2px = (lat, z) => { const s = Math.sin(lat*rad); return (0.5 - Math.log((1+s)/(1-s))/(4*Math.PI)) * 256 * 2**z; };
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous';
+  i.onload = () => res(i); i.onerror = () => rej(new Error('No se pudo cargar ' + src)); i.src = src; });
+
+// Usa primero el mosaico ya descargado en datos/ (necesario al publicar la página); si no existe, descarga los tiles.
+async function mosaic(z, bounds, url, local){
+  const x0 = Math.floor(lon2px(bounds.w, z)/256), x1 = Math.floor(lon2px(bounds.e, z)/256);
+  const y0 = Math.floor(lat2px(bounds.n, z)/256), y1 = Math.floor(lat2px(bounds.s, z)/256);
+  const cv = document.createElement('canvas'); cv.width = (x1-x0+1)*256; cv.height = (y1-y0+1)*256;
+  const ctx = cv.getContext('2d', {willReadFrequently:true}), jobs = [];
+  const pre = local && await loadImg(local).catch(() => null);
+  if (pre && pre.width === cv.width && pre.height === cv.height) ctx.drawImage(pre, 0, 0);
+  else for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++)
+    jobs.push(loadImg(url(z,x,y)).then(img => ctx.drawImage(img, (x-x0)*256, (y-y0)*256)).catch(() => {}));
+  await Promise.all(jobs);
+  return {cv, ctx, z, ox:x0*256, oy:y0*256,
+    toPx: (lat, lon) => [lon2px(lon, z) - x0*256, lat2px(lat, z) - y0*256]};
+}
+
+// =================== Escena ===================
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9fc4e8);
+scene.fog = new THREE.Fog(0x9fc4e8, 450, 1100);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.3, 4000);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.495;
+
+const hemi = new THREE.HemisphereLight(0xdfefff, 0x5a5040, 0.55); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.1);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, {left:-110, right:110, top:110, bottom:-110, near:1, far:900});
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.6;
+scene.add(sun, sun.target);
+
+const world = new THREE.Group(); scene.add(world);
+const groups = {casas:new THREE.Group(), exist:new THREE.Group(), arb:new THREE.Group()};
+Object.values(groups).forEach(g => world.add(g));
+
+let heights, NGRID, STEP, baseElev, terrainMesh, sat, texCanvas, texCtx, texture, planImg;
+
+function heightAt(x, z){   // bilineal sobre la malla del terreno (coordenadas locales)
+  const gx = (x + HALF)/STEP, gz = (z + HALF)/STEP;
+  const i = Math.min(NGRID-1, Math.max(0, Math.floor(gx))), j = Math.min(NGRID-1, Math.max(0, Math.floor(gz)));
+  const fx = Math.min(1, Math.max(0, gx-i)), fz = Math.min(1, Math.max(0, gz-j)), n = NGRID+1;
+  const h = (a, b) => heights[b*n + a];
+  return h(i,j)*(1-fx)*(1-fz) + h(i+1,j)*fx*(1-fz) + h(i,j+1)*(1-fx)*fz + h(i+1,j+1)*fx*fz;
+}
+
+async function buildTerrain(){
+  // Límites geográficos de la escena
+  const corners = [[-HALF,-HALF],[HALF,-HALF],[HALF,HALF],[-HALF,HALF]].map(([x,z]) => plane2geo(EC + x, NC - z));
+  const b = {n:Math.max(...corners.map(c=>c[0])), s:Math.min(...corners.map(c=>c[0])),
+             e:Math.max(...corners.map(c=>c[1])), w:Math.min(...corners.map(c=>c[1]))};
+  const [dem, imagery, plan] = await Promise.all([
+    mosaic(15, b, (z,x,y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`, 'datos/dem_z15.png'),
+    mosaic(18, b, (z,x,y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, 'datos/sat_z18.jpg'),
+    loadImg('plano.png').catch(() => null)]);
+  sat = imagery; planImg = plan;
+  const dd = dem.ctx.getImageData(0, 0, dem.cv.width, dem.cv.height).data, dw = dem.cv.width;
+  const demAt = (lat, lon) => {
+    const [px, py] = dem.toPx(lat, lon), x0 = Math.floor(px-.5), y0 = Math.floor(py-.5), fx = px-.5-x0, fy = py-.5-y0;
+    const v = (x, y) => { const i = (y*dw + x)*4; return dd[i]*256 + dd[i+1] + dd[i+2]/256 - 32768; };
+    return v(x0,y0)*(1-fx)*(1-fy) + v(x0+1,y0)*fx*(1-fy) + v(x0,y0+1)*(1-fx)*fy + v(x0+1,y0+1)*fx*fy;
+  };
+  NGRID = 175; STEP = 2*HALF/NGRID;
+  const geo = new THREE.PlaneGeometry(2*HALF, 2*HALF, NGRID, NGRID); geo.rotateX(-Math.PI/2);
+  const pos = geo.attributes.position, uv = geo.attributes.uv;
+  heights = new Float32Array(pos.count);
+  for (let i = 0; i < pos.count; i++){
+    const x = pos.getX(i), z = pos.getZ(i), [lat, lon] = plane2geo(EC + x, NC - z);
+    heights[i] = demAt(lat, lon);
+    const [u, v] = sat.toPx(lat, lon); uv.setXY(i, u/sat.cv.width, v/sat.cv.height);
+  }
+  baseElev = heightAt(0, 0);
+  for (let i = 0; i < pos.count; i++){ heights[i] -= baseElev; pos.setY(i, heights[i]); }
+  geo.computeVertexNormals();
+
+  texCanvas = document.createElement('canvas'); texCanvas.width = sat.cv.width; texCanvas.height = sat.cv.height;
+  texCtx = texCanvas.getContext('2d');
+  texture = new THREE.CanvasTexture(texCanvas);
+  texture.flipY = false; texture.encoding = THREE.sRGBEncoding; texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  terrainMesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({map:texture}));
+  terrainMesh.receiveShadow = true;
+  world.add(terrainMesh);
+  paintTexture();
+}
+
+// Pinta imagen satelital + plano CAD + trazado del proyecto sobre la textura del terreno
+const local2tex = ([x, z]) => { const [lat, lon] = plane2geo(EC + x, NC - z); return sat.toPx(lat, lon); };
+const px2tex = p => local2tex(px2local(p));
+function paintTexture(){
+  const ctx = texCtx, mpp = 156543.03 * Math.cos(6.08*rad) / 2**sat.z;   // metros por píxel de textura
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.drawImage(sat.cv, 0, 0);
+  const path = (pts, close) => { ctx.beginPath(); pts.map(px2tex).forEach(([x,y], i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y)); if (close) ctx.closePath(); };
+  if ($('lTraz').checked){
+    path(CESION, true); ctx.fillStyle = 'rgba(120,200,90,.35)'; ctx.fill();
+    path(PLAZA, true); ctx.fillStyle = 'rgba(215,210,195,.9)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(160,150,130,.9)'; ctx.lineWidth = 2/mpp;
+    path([PLAZA[0], PLAZA[2]]); ctx.stroke(); path([PLAZA[1], PLAZA[3]]); ctx.stroke();
+    ctx.lineCap = ctx.lineJoin = 'round';
+    for (const r of ROADS){ path(r); ctx.strokeStyle = '#d6d2c8'; ctx.lineWidth = (ROAD_W + 3)/mpp; ctx.stroke(); }
+    for (const r of ROADS){ path(r); ctx.strokeStyle = '#55575a'; ctx.lineWidth = ROAD_W/mpp; ctx.stroke(); }
+    for (const r of ROADS){ path(r); ctx.setLineDash([3/mpp, 3/mpp]); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = .15/mpp; ctx.stroke(); ctx.setLineDash([]); }
+    // Plataformas de las casas
+    for (const h of HOUSES){ const pts = h.local ? h.local.map(local2tex) : h.px.map(px2tex);
+      ctx.beginPath(); pts.forEach(([x,y],i)=> i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.closePath();
+      ctx.fillStyle = 'rgba(200,190,170,.85)'; ctx.fill(); }
+    path(LOT, true); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = .6/mpp; ctx.setLineDash([2/mpp, 1.2/mpp]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const op = +$('planOp').value;
+  if (planImg && op > 0){
+    // Transformación afín plano(px) → textura(px) a partir de tres esquinas
+    const m0 = px2tex([0,0]), m1 = px2tex([PLAN_W,0]), m2 = px2tex([0,PLAN_H]);
+    ctx.save();
+    ctx.setTransform((m1[0]-m0[0])/PLAN_W, (m1[1]-m0[1])/PLAN_W, (m2[0]-m0[0])/PLAN_H, (m2[1]-m0[1])/PLAN_H, m0[0], m0[1]);
+    ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = op;
+    ctx.drawImage(planImg, 0, 0);
+    ctx.restore();
+  }
+  texture.needsUpdate = true;
+}
+
+// =================== Construcciones ===================
+const matWall = new THREE.MeshLambertMaterial({color:0xf1e9da});
+const matWallOld = new THREE.MeshLambertMaterial({color:0xd8d2c6});
+const matRoof = new THREE.MeshLambertMaterial({color:0xb4552f, side:THREE.DoubleSide});
+const matRoofOld = new THREE.MeshLambertMaterial({color:0x8a6a55, side:THREE.DoubleSide});
+const matBase = new THREE.MeshLambertMaterial({color:0x9b958a});
+const matGlass = new THREE.MeshLambertMaterial({color:0x40566a});
+const matTrunk = new THREE.MeshLambertMaterial({color:0x6b4f35});
+const matLeaf = new THREE.MeshLambertMaterial({color:0x3d6b2f});
+const matPalm = new THREE.MeshLambertMaterial({color:0x5c8a34, side:THREE.DoubleSide});
+
+function prism(pts, y0, y1, mat){   // extrusión vertical de un polígono (x,z)
+  const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+  const g = new THREE.ExtrudeGeometry(shape, {depth:y1 - y0, bevelEnabled:false});
+  g.rotateX(-Math.PI/2); g.translate(0, y0, 0);
+  const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; return m;
+}
+function gableRoof(c, y, rise, over = 0.6){   // c: 4 esquinas; cumbrera paralela al lado más largo
+  const len = (a, b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
+  if (len(c[0],c[1]) < len(c[1],c[2])) c = [c[1],c[2],c[3],c[0]];
+  // Alero: expande el rectángulo
+  const cx = c.reduce((s,p)=>s+p[0],0)/4, cz = c.reduce((s,p)=>s+p[1],0)/4;
+  c = c.map(([x,z]) => { const d = Math.hypot(x-cx, z-cz); return [cx + (x-cx)*(d+over)/d, cz + (z-cz)*(d+over)/d]; });
+  const mid = (a, b) => [(a[0]+b[0])/2, (a[1]+b[1])/2];
+  const r0 = mid(c[0], c[3]), r1 = mid(c[1], c[2]);
+  const v = [...c.map(([x,z]) => [x, y, z]), [r0[0], y+rise, r0[1]], [r1[0], y+rise, r1[1]]];
+  const idx = [0,1,5, 0,5,4, 2,3,4, 2,4,5, 0,4,3, 1,2,5];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(idx.flatMap(i => v[i]), 3));
+  g.computeVertexNormals();
+  return g;
+}
+function windows(c, y0, floors, group){  // ventanas oscuras en las fachadas largas
+  for (let k = 0; k < 4; k++){
+    const a = c[k], b = c[(k+1)%4], L = Math.hypot(b[0]-a[0], b[1]-a[1]); if (L < 6) continue;
+    const ang = Math.atan2(b[1]-a[1], b[0]-a[0]), n = Math.floor(L/3.2);
+    const cx = c.reduce((s,p)=>s+p[0],0)/4, cz = c.reduce((s,p)=>s+p[1],0)/4;
+    for (let f = 0; f < floors; f++) for (let i = 1; i <= n; i++){
+      if (i % 3 === 0) continue;
+      const t = i/(n+1), px = a[0]+(b[0]-a[0])*t, pz = a[1]+(b[1]-a[1])*t;
+      const out = 0.06 / Math.hypot(px-cx, pz-cz);
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.3), matGlass);
+      w.position.set(px + (px-cx)*out, y0 + 1.5 + f*2.9, pz + (pz-cz)*out);
+      w.rotation.y = -ang + Math.PI * ((k===0||k===3)?1:0);
+      w.material.side = THREE.DoubleSide;
+      group.add(w);
+    }
+  }
+}
+function buildHouses(){
+  for (const h of HOUSES){
+    const c = h.local || h.px.map(px2local);
+    const ys = c.map(([x,z]) => heightAt(x,z)), lo = Math.min(...ys), floor = ys.reduce((a,b)=>a+b,0)/ys.length + 0.3;
+    const g = new THREE.Group(), wallH = h.floors * 2.9;
+    const base = prism(c, lo - 0.5, floor, matBase);
+    const walls = prism(c, floor, floor + wallH, h.existing ? matWallOld : matWall);
+    g.add(base, walls);
+    if (h.flat) g.add(prism(c, floor + wallH, floor + wallH + 0.25, h.existing ? matRoofOld : matBase));
+    else { const r = new THREE.Mesh(gableRoof(c.map(p=>[...p]), floor + wallH, 1.8), h.existing ? matRoofOld : matRoof);
+      r.castShadow = r.receiveShadow = true; g.add(r); }
+    windows(c, floor, h.floors, g);
+    const area = h.area;
+    const cen = c.reduce((s,p)=>[s[0]+p[0]/4, s[1]+p[1]/4],[0,0]);
+    g.traverse(o => o.userData = {house:h, floorElev: floor + baseElev, center:cen});
+    (h.existing ? groups.exist : groups.casas).add(g);
+  }
+  // Kiosko comunal
+  const [kx, kz] = px2local(KIOSKO), ky = heightAt(kx, kz);
+  const k = new THREE.Group();
+  for (let i = 0; i < 6; i++){ const a = i*Math.PI/3;
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,2.6), matTrunk); col.position.set(kx+2.6*Math.cos(a), ky+1.3, kz+2.6*Math.sin(a)); col.castShadow = true; k.add(col); }
+  const kr = new THREE.Mesh(new THREE.ConeGeometry(3.6, 1.6, 6), matRoof); kr.position.set(kx, ky+3.4, kz); kr.castShadow = true; k.add(kr);
+  const kp = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, .3, 6), matBase); kp.position.set(kx, ky+.1, kz); kp.receiveShadow = true; k.add(kp);
+  k.traverse(o => o.userData = {house:{name:'Kiosko comunal'}, floorElev: ky + baseElev, center:[kx,kz]});
+  groups.casas.add(k);
+}
+function buildTrees(){
+  const rnd = (i) => (Math.sin(i*12.9898)*43758.5453) % 1;
+  TREES.forEach((p, i) => {
+    const [x, z] = px2local(p), y = heightAt(x, z), s = 0.85 + Math.abs(rnd(i))*0.4;
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(.18*s, .28*s, 3.2*s), matTrunk); t.position.set(x, y+1.6*s, z);
+    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(2.6*s, 1), matLeaf); crown.position.set(x, y+4.6*s, z);
+    crown.scale.y = .85; t.castShadow = crown.castShadow = true;
+    groups.arb.add(t, crown);
+  });
+  PALMS.forEach((p, i) => {
+    const [x, z] = px2local(p), y = heightAt(x, z), H = 6 + Math.abs(rnd(i+50))*2.5;
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(.16, .24, H, 6), matTrunk); t.position.set(x, y+H/2, z); t.castShadow = true;
+    groups.arb.add(t);
+    for (let k = 0; k < 8; k++){
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 3.4), matPalm);
+      f.geometry.translate(0, 1.7, 0);
+      f.position.set(x, y+H, z);
+      f.rotation.set(0, k*Math.PI/4 + i, 0); f.rotateX(1.05 + (k%2)*0.25);
+      f.castShadow = true; groups.arb.add(f);
+    }
+  });
+}
+
+// =================== Sol ===================
+function updateSun(){
+  const hour = +$('hora').value, month = +$('mes').value, doy = month*30.4 + 15;
+  const decl = 23.44*rad*Math.sin(2*Math.PI*(284 + doy)/365), lat = 6.08*rad, ha = (hour - 12)*15*rad;
+  const elev = Math.asin(Math.sin(lat)*Math.sin(decl) + Math.cos(lat)*Math.cos(decl)*Math.cos(ha));
+  const az = Math.atan2(-Math.sin(ha), Math.tan(decl)*Math.cos(lat) - Math.sin(lat)*Math.cos(ha)); // desde el norte, horario
+  const d = 400;
+  sun.position.set(d*Math.cos(elev)*Math.sin(az), d*Math.sin(elev), -d*Math.cos(elev)*Math.cos(az));
+  sun.target.position.set(0, 0, 0);
+  const k = Math.max(0, Math.sin(elev));
+  sun.intensity = 0.25 + 1.0*Math.min(1, k*1.6);
+  sun.color.setHSL(0.09, 0.6, 0.55 + 0.4*Math.min(1, k*2));
+  const h = Math.floor(hour), m = Math.round((hour-h)*60);
+  $('horaV').textContent = `${h}:${String(m).padStart(2,'0')}`;
+}
+
+// =================== Cámara y vistas ===================
+let walking = false; const keys = {};
+function setView(v){
+  ['vAerea','vPlanta','vPeaton'].forEach(id => $(id).classList.toggle('on', id === v));
+  walking = v === 'vPeaton'; $('walkHelp').style.display = walking ? 'block' : 'none';
+  controls.enabled = true;
+  if (v === 'vAerea'){ camera.position.set(-90, 95, 150); controls.target.set(0, 0, 0); controls.maxPolarAngle = Math.PI*.495; }
+  if (v === 'vPlanta'){ camera.position.set(0, 230, 0.01); controls.target.set(0, 0, 0); }
+  if (v === 'vPeaton'){
+    const [x, z] = px2local([680, 735]);
+    camera.position.set(x, heightAt(x, z) + 1.7 * ex(), z);
+    controls.target.set(x + 0.01, camera.position.y, z - 10);
+  }
+  controls.update();
+}
+const ex = () => +$('exag').value;
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+function walk(dt){
+  if (!walking) return;
+  const f = (keys.w||keys.arrowup?1:0) - (keys.s||keys.arrowdown?1:0), s = (keys.d||keys.arrowright?1:0) - (keys.a||keys.arrowleft?1:0);
+  if (!f && !s) return;
+  const dir = new THREE.Vector3().subVectors(controls.target, camera.position); dir.y = 0; dir.normalize();
+  const right = new THREE.Vector3(-dir.z, 0, dir.x), mv = dir.multiplyScalar(f).add(right.multiplyScalar(s)).multiplyScalar(dt*(keys.shift?8:3));
+  camera.position.add(mv); controls.target.add(mv);
+  const y = heightAt(camera.position.x, camera.position.z) * ex() + 1.7;
+  controls.target.y += y - camera.position.y; camera.position.y = y;
+}
+
+// =================== Interacción ===================
+const $ = id => document.getElementById(id);
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+let downAt;
+canvas.addEventListener('pointerdown', e => downAt = [e.clientX, e.clientY]);
+canvas.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]) > 4) return;
+  mouse.set(e.clientX/innerWidth*2 - 1, -e.clientY/innerHeight*2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects([groups.casas, groups.exist].filter(g => g.visible), true)[0];
+  const info = $('info');
+  if (!hit){ info.style.display = 'none'; return; }
+  const {house, floorElev, center} = hit.object.userData;
+  const [E, N] = [EC + center[0], NC - center[1]], [lat, lon] = plane2geo(E, N);
+  info.innerHTML = `<b>${house.name}</b><br>` + (house.area ? `Área construida: ${house.area.toLocaleString('es')} m²<br>` : '') +
+    (house.floors ? `Pisos: ${house.floors}<br>` : '') + `Cota de piso aprox.: ${floorElev.toFixed(1)} m s.n.m.<br>` +
+    `E ${E.toFixed(2)} · N ${N.toFixed(2)}<br>${lat.toFixed(6)}, ${lon.toFixed(6)}` + (house.note ? `<br><i>${house.note}</i>` : '');
+  info.style.display = 'block';
+});
+$('vAerea').onclick = () => setView('vAerea');
+$('vPlanta').onclick = () => setView('vPlanta');
+$('vPeaton').onclick = () => setView('vPeaton');
+$('lCasas').onchange = e => groups.casas.visible = e.target.checked;
+$('lExist').onchange = e => groups.exist.visible = e.target.checked;
+$('lArb').onchange = e => groups.arb.visible = e.target.checked;
+$('lTraz').onchange = paintTexture;
+$('planOp').oninput = paintTexture;
+$('hora').oninput = updateSun; $('mes').onchange = updateSun;
+$('exag').oninput = e => { world.scale.y = +e.target.value; $('exagV').textContent = e.target.value + '×'; };
+$('toggle').onclick = () => $('panel').classList.toggle('min');
+
+function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize);
+
+let last = performance.now();
+function loop(t){
+  const dt = Math.min(0.1, (t - last)/1000); last = t;
+  walk(dt); controls.update(); renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+(async () => {
+  resize();
+  try { await buildTerrain(); }
+  catch (e) { $('loading').textContent = 'Error cargando datos: ' + e.message; return; }
+  buildHouses(); buildTrees(); updateSun(); setView('vAerea');
+  const lotA = (() => { const p = LOT.map(px2local); let a = 0; p.forEach((q,i) => { const r = p[(i+1)%p.length]; a += q[0]*r[1] - r[0]*q[1]; }); return Math.abs(a)/2; })();
+  const zs = LOT.map(px2local).map(([x,z]) => heightAt(x,z) + baseElev);
+  $('stats').innerHTML = `Lote ≈ ${(lotA/10000).toFixed(2)} ha · Cotas del lindero ${Math.min(...zs).toFixed(0)}–${Math.max(...zs).toFixed(0)} m s.n.m. · ${HOUSES.filter(h=>!h.existing && h.area).length} casas proyectadas`;
+  $('loading').remove();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

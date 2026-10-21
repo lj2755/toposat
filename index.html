@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TopoSat</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root{
+  --bg:#f6f7f5; --panel:#ffffff; --text:#1d2420; --muted:#5d6862; --line:#dfe3e0;
+  --accent:#2f6b4f; --accent-2:#e9f2ed; --warn:#a4512b; --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#121614; --panel:#1a201d; --text:#e5ebe7; --muted:#9aa69f; --line:#2c3531;
+    --accent:#6cc79a; --accent-2:#20302a; --warn:#e59a74; --shadow:0 1px 3px rgba(0,0,0,.4); }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{display:flex;height:100%}
+#side{width:340px;flex:none;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:16px}
+#mapwrap{flex:1;position:relative}
+#map{position:absolute;inset:0}
+h1{font-size:18px;margin:0 0 2px}
+.sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+section{border-top:1px solid var(--line);padding:12px 0}
+section h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);
+  border-radius:8px;padding:7px 10px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme: dark){ button.primary{color:#0d1a13} }
+button.on{background:var(--accent-2);border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+label{font-size:13px;color:var(--muted)}
+select,input[type=number]{font:inherit;padding:5px 6px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat{background:var(--bg);border-radius:8px;padding:6px 8px}
+.stat b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted)}
+#msg{font-size:12px;color:var(--muted);min-height:18px}
+#msg.err{color:var(--warn)}
+canvas#prof{width:100%;height:150px;background:var(--bg);border-radius:8px;display:block}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+td,th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:right}
+td:first-child,th:first-child{text-align:left}
+#readout{position:absolute;left:10px;bottom:22px;z-index:500;background:var(--panel);color:var(--text);
+  border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px;box-shadow:var(--shadow);
+  font-variant-numeric:tabular-nums;pointer-events:none}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+@media (max-width:760px){
+  #app{flex-direction:column-reverse}
+  #side{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
+  #mapwrap{min-height:54%}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <h1>TopoSat</h1>
+    <div class="sub">Levantamiento topográfico con modelos de elevación satelital (SRTM/Copernicus) + GNSS del dispositivo</div>
+
+    <section>
+      <h2>Ir a un sitio</h2>
+      <form id="goForm" class="row" style="flex-wrap:nowrap">
+        <input id="goInput" type="text" placeholder="7.1193, -73.1227" autocomplete="off"
+          style="flex:1;min-width:0;font:inherit;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text)">
+        <button class="primary" type="submit">Ir</button>
+      </form>
+      <div class="hint">Formatos: <b>7.1193, -73.1227</b> · <b>7°07'09"N 73°07'22"W</b> · UTM <b>18N 707410 787325</b> · o un nombre de lugar.</div>
+      <div id="goMsg" class="hint"></div>
+    </section>
+
+    <section>
+      <h2>1 · Área de trabajo</h2>
+      <div class="row">
+        <button id="bArea" class="primary">Rectángulo</button>
+        <button id="bPoly" class="primary">Polígono</button>
+        <button id="bLoc">Mi ubicación</button>
+      </div>
+      <div class="hint">Rectángulo: clic en dos esquinas opuestas. Polígono: clic en cada vértice y doble clic para cerrar (Retroceso quita el último). Después puedes arrastrar un vértice, o borrarlo con clic derecho, desde su ventana o con ✕ en el cuadro de coordenadas.</div>
+      <details style="margin-top:6px">
+        <summary class="hint" style="cursor:pointer">Pegar vértices por coordenadas</summary>
+        <textarea id="polyText" rows="5" placeholder="Un vértice por línea:&#10;7.1201, -73.1240&#10;7.1210, -73.1205&#10;18N 707500 787200&#10;…"
+          style="width:100%;margin-top:6px;font:12px ui-monospace,monospace;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text)"></textarea>
+        <div class="row"><button id="bPolyText">Crear polígono</button></div>
+      </details>
+      <div class="row" style="margin-top:8px">
+        <label>Equidistancia</label>
+        <select id="interval">
+          <option value="auto">Auto</option><option>1</option><option>2</option><option>5</option>
+          <option>10</option><option>20</option><option>25</option><option>50</option><option>100</option>
+        </select>
+        <label>Resolución</label>
+        <select id="res"><option value="150">Rápida</option><option value="300" selected>Normal</option><option value="500">Alta</option></select>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="chkShade" checked> Sombreado</label>
+        <label><input type="checkbox" id="chkCont" checked> Curvas</label>
+        <button id="bRedo" disabled>Recalcular</button>
+      </div>
+      <div id="msg"></div>
+    </section>
+
+    <section id="secStats" hidden>
+      <h2>Resultados</h2>
+      <div class="stats" id="stats"></div>
+      <div id="polyBox" hidden>
+        <h2 style="margin-top:12px">Cuadro de coordenadas del polígono</h2>
+        <table id="polyTable"><thead><tr><th>V</th><th>Este</th><th>Norte</th><th>Cota</th><th>Dist. m</th><th></th></tr></thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <section>
+      <h2>2 · Perfil del terreno</h2>
+      <div class="row"><button id="bProf">Trazar perfil</button><button id="bProfClr">Borrar</button></div>
+      <div class="hint">Clic para añadir vértices, doble clic para terminar.</div>
+      <canvas id="prof" hidden></canvas>
+      <div id="profInfo" class="hint"></div>
+    </section>
+
+    <section>
+      <h2>3 · Puntos de levantamiento</h2>
+      <div class="row">
+        <button id="bGps">Capturar GNSS</button>
+        <button id="bPt">Punto en mapa</button>
+      </div>
+      <div class="hint">GNSS promedia lecturas durante 10 s para mejorar la precisión.</div>
+      <table id="ptTable" hidden><thead><tr><th>Id</th><th>Este</th><th>Norte</th><th>Cota</th><th>±m</th></tr></thead><tbody></tbody></table>
+    </section>
+
+    <section>
+      <h2>4 · Exportar</h2>
+      <div class="row">
+        <button id="eDxf" disabled>Curvas DXF</button>
+        <button id="eGeo" disabled>Curvas GeoJSON</button>
+      </div>
+      <div class="row">
+        <button id="eXyz" disabled>Malla XYZ (CSV)</button>
+        <button id="ePts" disabled>Puntos CSV</button>
+        <button id="ePoly" disabled>Polígono CSV</button>
+      </div>
+      <div class="hint">Coordenadas UTM WGS84. Compatible con QGIS, AutoCAD/Civil 3D.</div>
+    </section>
+
+    <section>
+      <h2>Proyectos</h2>
+      <a href="simulacion.html" style="color:var(--accent);font-weight:600">Condominio Pontezuela · simulación 3D →</a>
+    </section>
+
+    <section>
+      <div class="hint">Datos de elevación: AWS Terrain Tiles (SRTM 30 m, Copernicus/ETOPO, NED, etc.). Precisión vertical típica ±5–10 m: apto para anteproyectos, no reemplaza un levantamiento con estación total o GNSS RTK.</div>
+    </section>
+  </aside>
+  <div id="mapwrap"><div id="map"></div><div id="readout">Mueve el cursor sobre el mapa</div></div>
+</div>
+
+<script>
+// ---------- Mapa ----------
+const map = L.map('map', {doubleClickZoom:false}).setView([4.6,-74.1], 6);
+const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:19, attribution:'Imágenes © Esri, Maxar, Earthstar Geographics'}).addTo(map);
+const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+  {maxZoom:17, attribution:'© OpenTopoMap (CC-BY-SA), © OpenStreetMap'});
+const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom:19, attribution:'© OpenStreetMap'});
+const contourLayer = L.layerGroup().addTo(map);
+const ptsLayer = L.layerGroup().addTo(map);
+const profLayer = L.layerGroup().addTo(map);
+L.control.layers({'Satélite':sat,'Topográfico':topo,'Calles':osm},{'Curvas de nivel':contourLayer,'Puntos':ptsLayer}).addTo(map);
+L.control.scale({imperial:false}).addTo(map);
+
+const $ = id => document.getElementById(id);
+const msg = (t, err) => { $('msg').textContent = t; $('msg').className = err ? 'err' : ''; };
+
+// ---------- Elevación (Terrarium tiles, AWS Open Data) ----------
+const TILE = (z,x,y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
+const tilePromises = new Map(), tileData = new Map();
+function loadTile(z,x,y){
+  const n = 2**z; x = ((x % n) + n) % n;
+  if (y < 0 || y >= n) return Promise.resolve(null);
+  const key = `${z}/${x}/${y}`;
+  if (tilePromises.has(key)) return tilePromises.get(key);
+  const p = new Promise((res, rej) => {
+    const img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = 256;
+      const ctx = c.getContext('2d', {willReadFrequently:true}); ctx.drawImage(img,0,0);
+      const d = ctx.getImageData(0,0,256,256).data, a = new Float32Array(65536);
+      for (let i=0;i<65536;i++) a[i] = d[i*4]*256 + d[i*4+1] + d[i*4+2]/256 - 32768;
+      tileData.set(key, a); res(a);
+    };
+    img.onerror = () => { tilePromises.delete(key); rej(new Error('No se pudo descargar el tile '+key)); };
+    img.src = TILE(z,x,y);
+  });
+  tilePromises.set(key, p); return p;
+}
+const lon2px = (lon,z) => (lon+180)/360 * 256 * 2**z;
+const lat2px = (lat,z) => { const s = Math.sin(lat*Math.PI/180); return (0.5 - Math.log((1+s)/(1-s))/(4*Math.PI)) * 256 * 2**z; };
+function pix(z,gx,gy){
+  const n = 2**z, max = n*256-1;
+  gy = Math.min(Math.max(gy,0),max); gx = ((gx % (n*256)) + n*256) % (n*256);
+  const a = tileData.get(`${z}/${Math.floor(gx/256)}/${Math.floor(gy/256)}`);
+  return a ? a[(gy%256)*256 + (gx%256)] : NaN;
+}
+function elevSync(z, lat, lng){            // interpolación bilineal
+  const px = lon2px(lng,z) - 0.5, py = lat2px(lat,z) - 0.5;
+  const x0 = Math.floor(px), y0 = Math.floor(py), fx = px-x0, fy = py-y0;
+  const a = pix(z,x0,y0), b = pix(z,x0+1,y0), c = pix(z,x0,y0+1), d = pix(z,x0+1,y0+1);
+  return a*(1-fx)*(1-fy) + b*fx*(1-fy) + c*(1-fx)*fy + d*fx*fy;
+}
+function tilesFor(z, pts){
+  const s = new Set();
+  for (const [lat,lng] of pts){
+    const px = lon2px(lng,z), py = lat2px(lat,z);
+    for (const dx of [-1,1]) for (const dy of [-1,1])
+      s.add(`${Math.floor((px+dx)/256)}/${Math.floor((py+dy)/256)}`);
+  }
+  return [...s].map(k => k.split('/').map(Number));
+}
+async function ensure(z, pts){ await Promise.all(tilesFor(z,pts).map(([x,y]) => loadTile(z,x,y))); }
+async function elevAt(lat,lng,z=14){ await ensure(z,[[lat,lng]]); return elevSync(z,lat,lng); }
+
+// ---------- Utilidades geodésicas ----------
+const R = 6371008.8, rad = Math.PI/180;
+function dist(a,b){
+  const dLat=(b[0]-a[0])*rad, dLng=(b[1]-a[1])*rad;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a[0]*rad)*Math.cos(b[0]*rad)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function utmZone(lng){ return Math.floor((lng+180)/6)+1; }
+function toUTM(lat, lon, zone = utmZone(lon)){
+  const a=6378137, f=1/298.257223563, k0=0.9996, e2=f*(2-f), ep2=e2/(1-e2);
+  const lon0 = (zone-1)*6-180+3, φ=lat*rad, λ=(lon-lon0)*rad;
+  const N=a/Math.sqrt(1-e2*Math.sin(φ)**2), T=Math.tan(φ)**2, C=ep2*Math.cos(φ)**2, A=Math.cos(φ)*λ;
+  const M=a*((1-e2/4-3*e2**2/64-5*e2**3/256)*φ-(3*e2/8+3*e2**2/32+45*e2**3/1024)*Math.sin(2*φ)
+    +(15*e2**2/256+45*e2**3/1024)*Math.sin(4*φ)-(35*e2**3/3072)*Math.sin(6*φ));
+  const x = k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep2)*A**5/120)+500000;
+  let y = k0*(M+N*Math.tan(φ)*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep2)*A**6/720));
+  if (lat < 0) y += 10000000;
+  return {x, y, zone, hemi: lat<0?'S':'N'};
+}
+const fmt = (v,d=1) => Number.isFinite(v) ? v.toLocaleString('es',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
+
+// ---------- Modos de interacción ----------
+let mode = null, areaStart = null, areaRect = null, bbox = null, profPts = [], profLine = null;
+let areaPoly = null, polyDraft = [], polyDraftLine = null;
+const polyLayer = L.layerGroup().addTo(map);
+function setMode(m){
+  mode = (mode === m) ? null : m;
+  $('bArea').classList.toggle('on', mode==='area');
+  $('bPoly').classList.toggle('on', mode==='poly');
+  if (mode === 'poly') { polyDraft = []; msg('Clic en cada vértice; doble clic para cerrar el polígono.'); }
+  $('bProf').classList.toggle('on', mode==='profile');
+  $('bPt').classList.toggle('on', mode==='point');
+  map.getContainer().style.cursor = mode ? 'crosshair' : '';
+  if (mode === 'area') { areaStart = null; msg('Clic en la primera esquina del área.'); }
+  if (mode === 'profile') { profPts = []; profLayer.clearLayers(); }
+}
+$('bArea').onclick = () => setMode('area');
+$('bProf').onclick = () => setMode('profile');
+$('bPt').onclick = () => setMode('point');
+$('bProfClr').onclick = () => { profPts=[]; profLayer.clearLayers(); $('prof').hidden = true; $('profInfo').textContent=''; };
+$('bLoc').onclick = () => navigator.geolocation.getCurrentPosition(
+  p => map.setView([p.coords.latitude,p.coords.longitude], 15),
+  e => msg('Ubicación no disponible: '+e.message, true), {enableHighAccuracy:true});
+
+map.on('click', e => {
+  const ll = [e.latlng.lat, e.latlng.lng];
+  if (mode === 'area'){
+    if (!areaStart){ areaStart = ll; msg('Clic en la esquina opuesta.'); return; }
+    const b = L.latLngBounds(areaStart, ll);
+    clearArea();
+    areaRect = L.rectangle(b, {color:'#f5c542', weight:2, fill:false, dashArray:'6 4'}).addTo(map);
+    bbox = {s:b.getSouth(), w:b.getWest(), n:b.getNorth(), e:b.getEast()};
+    setMode('area'); processArea();
+  } else if (mode === 'poly'){
+    polyDraft.push(ll);
+    if (polyDraftLine) polyLayer.removeLayer(polyDraftLine);
+    polyDraftLine = L.polyline(polyDraft, {color:'#f5c542', weight:2, dashArray:'6 4'}).addTo(polyLayer);
+  } else if (mode === 'profile'){
+    profPts.push(ll);
+    if (profLine) profLayer.removeLayer(profLine);
+    profLine = L.polyline(profPts, {color:'#ff5a36', weight:3}).addTo(profLayer);
+    L.circleMarker(ll,{radius:4,color:'#ff5a36',fillOpacity:1}).addTo(profLayer);
+  } else if (mode === 'point'){
+    addPoint(ll[0], ll[1], null, null, 'mapa');
+  }
+});
+// El doble clic dispara también dos clics: quita vértices repetidos
+const dedupe = pts => pts.filter((p,i) => i===0 || dist(p, pts[i-1]) > 0.5);
+map.on('dblclick', () => {
+  if (mode === 'profile'){ profPts = dedupe(profPts); if (profPts.length >= 2){ setMode('profile'); computeProfile(); } }
+  else if (mode === 'poly'){
+    const pts = dedupe(polyDraft);
+    if (pts.length < 3) return msg('El polígono necesita al menos 3 vértices.', true);
+    setMode('poly'); setPolygon(pts);
+  }
+});
+
+// ---------- Polígono ----------
+function clearArea(){
+  if (areaRect) { map.removeLayer(areaRect); areaRect = null; }
+  polyLayer.clearLayers(); polyDraftLine = null; areaPoly = null;
+  $('polyBox').hidden = true; $('ePoly').disabled = true;
+}
+function setPolygon(pts, keepView){
+  clearArea();
+  areaPoly = pts.map(p => [...p]);
+  const shape = L.polygon(areaPoly, {color:'#f5c542', weight:2.5, fill:false}).addTo(polyLayer);
+  areaRect = null;
+  areaPoly.forEach((p, i) => {
+    L.marker(p, {draggable:true, icon: L.divIcon({className:'', iconSize:[12,12],
+      html:'<div style="width:12px;height:12px;border-radius:50%;background:#f5c542;border:2px solid #222"></div>'})})
+      .bindTooltip('V'+(i+1), {permanent:true, direction:'right', offset:[6,0]})
+      .on('drag', e => { areaPoly[i] = [e.latlng.lat, e.latlng.lng]; shape.setLatLngs(areaPoly); })
+      .on('dragend', () => { updateBBox(); syncPolyText(); processArea(); })
+      .on('contextmenu', () => deleteVertex(i))
+      .bindPopup(() => {
+        const d = document.createElement('div');
+        d.innerHTML = `<b>V${i+1}</b><br>${areaPoly[i][0].toFixed(7)}, ${areaPoly[i][1].toFixed(7)}<br>`;
+        const b = document.createElement('button'); b.textContent = 'Eliminar vértice';
+        b.onclick = () => { map.closePopup(); deleteVertex(i); };
+        d.appendChild(b); return d;
+      })
+      .addTo(polyLayer);
+  });
+  updateBBox();
+  syncPolyText();
+  if (!keepView) map.fitBounds(shape.getBounds(), {padding:[30,30]});
+  processArea();
+}
+function deleteVertex(i){
+  if (!areaPoly) return;
+  if (areaPoly.length <= 3) return msg('El polígono necesita al menos 3 vértices. Para empezar de nuevo, dibuja otro polígono.', true);
+  const pts = areaPoly.filter((_, k) => k !== i);
+  msg(`Vértice V${i+1} eliminado. Los vértices se renumeraron.`);
+  setPolygon(pts);   // reencuadra: un vértice errado suele estar lejos
+}
+// Mantiene la lista de "Pegar vértices" igual al polígono actual, para poder corregirlo como texto
+function syncPolyText(){
+  $('polyText').value = areaPoly.map(p => `${p[0].toFixed(8)}, ${p[1].toFixed(8)}`).join('\n');
+}
+function updateBBox(){
+  const b = L.latLngBounds(areaPoly);
+  bbox = {s:b.getSouth(), w:b.getWest(), n:b.getNorth(), e:b.getEast()};
+}
+function inPoly(lat, lng, poly){
+  let inside = false;
+  for (let i=0, j=poly.length-1; i<poly.length; j=i++){
+    const [yi,xi] = poly[i], [yj,xj] = poly[j];
+    if ((yi>lat) !== (yj>lat) && lng < (xj-xi)*(lat-yi)/(yj-yi)+xi) inside = !inside;
+  }
+  return inside;
+}
+function polyMetrics(poly){
+  const zone = utmZone(poly.reduce((s,p)=>s+p[1],0)/poly.length);
+  const u = poly.map(p => toUTM(p[0], p[1], zone));
+  let a = 0, per = 0;
+  for (let i=0;i<u.length;i++){ const j=(i+1)%u.length; a += u[i].x*u[j].y - u[j].x*u[i].y; per += dist(poly[i], poly[j]); }
+  // Corrige el factor de escala UTM para obtener el área real sobre el terreno
+  const xm = u.reduce((s,p)=>s+p.x,0)/u.length - 500000, kLocal = 0.9996*(1 + xm*xm/(2*6371000**2));
+  return {area: Math.abs(a)/2/(kLocal*kLocal), per, zone, u};
+}
+async function fillPolyTable(){
+  const {u} = polyMetrics(areaPoly);
+  let h = []; try { await ensure(15, areaPoly); h = areaPoly.map(p => elevSync(15, p[0], p[1])); } catch {}
+  areaPoly.forEach((p,i) => { p.h = h[i]; });
+  $('polyTable').tBodies[0].innerHTML = areaPoly.map((p,i) => {
+    const d = dist(p, areaPoly[(i+1)%areaPoly.length]);
+    return `<tr><td>V${i+1}</td><td>${u[i].x.toFixed(2)}</td><td>${u[i].y.toFixed(2)}</td><td>${fmt(h[i])}</td><td>${fmt(d,2)}</td>` +
+      `<td><button class="delV" data-i="${i}" title="Eliminar V${i+1}" aria-label="Eliminar V${i+1}" style="padding:0 6px;line-height:18px">✕</button></td></tr>`;
+  }).join('');
+  $('polyTable').querySelectorAll('.delV').forEach(b => b.onclick = () => deleteVertex(+b.dataset.i));
+  $('polyBox').hidden = false; $('ePoly').disabled = false;
+}
+$('bPoly').onclick = () => setMode('poly');
+// Mientras se dibuja: Retroceso/Supr quita el último vértice, Esc cancela
+document.addEventListener('keydown', e => {
+  if (mode !== 'poly' || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if ((e.key === 'Backspace' || e.key === 'Delete') && polyDraft.length){
+    e.preventDefault(); polyDraft.pop();
+    if (polyDraftLine) polyLayer.removeLayer(polyDraftLine);
+    polyDraftLine = L.polyline(polyDraft, {color:'#f5c542', weight:2, dashArray:'6 4'}).addTo(polyLayer);
+    msg(`Último vértice quitado (${polyDraft.length} vértices).`);
+  } else if (e.key === 'Escape'){
+    polyDraft = []; if (polyDraftLine) polyLayer.removeLayer(polyDraftLine); polyDraftLine = null;
+    setMode('poly'); msg('Dibujo del polígono cancelado.');
+  }
+});
+$('bPolyText').onclick = () => {
+  const lines = $('polyText').value.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const pts = [], bad = [];
+  lines.forEach((s,i) => { const p = parseCoords(s); p ? pts.push(p) : bad.push(i+1); });
+  if (bad.length) return msg('No se reconocieron las líneas: ' + bad.join(', '), true);
+  if (pts.length < 3) return msg('El polígono necesita al menos 3 vértices.', true);
+  setPolygon(pts);
+};
+
+// Lectura de cursor
+let hoverT;
+map.on('mousemove', e => {
+  clearTimeout(hoverT);
+  const {lat,lng} = e.latlng, u = toUTM(lat,lng);
+  const base = `${lat.toFixed(6)}, ${lng.toFixed(6)} · UTM ${u.zone}${u.hemi} E ${u.x.toFixed(1)} N ${u.y.toFixed(1)}`;
+  const z = 14, now = elevSync(z,lat,lng);
+  $('readout').textContent = base + (Number.isFinite(now) ? ` · Cota ${now.toFixed(1)} m` : '');
+  if (!Number.isFinite(now)) hoverT = setTimeout(async () => {
+    try { const h = await elevAt(lat,lng,z); $('readout').textContent = base + ` · Cota ${h.toFixed(1)} m`; } catch {}
+  }, 250);
+});
+
+// ---------- Procesamiento del área ----------
+let grid = null, shadeOverlay = null, contours = [];
+function pickZoom(b){
+  for (let z = 15; z >= 4; z--){
+    const nx = Math.floor(lon2px(b.e,z)/256) - Math.floor(lon2px(b.w,z)/256) + 1;
+    const ny = Math.floor(lat2px(b.s,z)/256) - Math.floor(lat2px(b.n,z)/256) + 1;
+    if (nx*ny <= 40) return z;
+  }
+  return 4;
+}
+async function processArea(){
+  if (!bbox) return;
+  const b = bbox, z = pickZoom(b), maxN = +$('res').value;
+  const wM = dist([(b.s+b.n)/2,b.w],[(b.s+b.n)/2,b.e]), hM = dist([b.s,b.w],[b.n,b.w]);
+  if (wM*hM > 2.5e9) { msg('El área es muy grande (máx. ~2 500 km²). Dibuja una más pequeña.', true); return; }
+  const tileRes = 156543.03*Math.cos((b.s+b.n)/2*rad)/2**z;
+  const cell = Math.max(tileRes, Math.max(wM,hM)/maxN);
+  const W = Math.max(8, Math.round(wM/cell)), H = Math.max(8, Math.round(hM/cell));
+  msg(`Descargando elevaciones (zoom ${z})…`);
+  try {
+    const corners = [];
+    for (let i=0;i<=8;i++) for (let j=0;j<=8;j++) corners.push([b.s+(b.n-b.s)*i/8, b.w+(b.e-b.w)*j/8]);
+    await ensure(z, corners);
+  } catch (e) { msg(e.message, true); return; }
+  const vals = new Float64Array(W*H);
+  for (let r=0;r<H;r++){
+    const lat = b.n - (r+0.5)/H*(b.n-b.s);
+    for (let c=0;c<W;c++) vals[r*W+c] = elevSync(z, lat, b.w + (c+0.5)/W*(b.e-b.w));
+  }
+  grid = {W, H, vals, b, cx: wM/W, cy: hM/H, z};
+  draw();
+}
+
+function niceInterval(range){
+  const steps=[0.5,1,2,5,10,20,25,50,100,200,250,500];
+  return steps.find(s => range/s <= 18) || 1000;
+}
+function hypso(t){ // rampa hipsométrica
+  const stops=[[0,[44,123,182]],[.15,[102,189,99]],[.4,[217,239,139]],[.65,[253,174,97]],[.85,[166,97,26]],[1,[250,250,250]]];
+  for (let i=1;i<stops.length;i++) if (t<=stops[i][0]){
+    const [t0,c0]=stops[i-1],[t1,c1]=stops[i], f=(t-t0)/(t1-t0);
+    return c0.map((v,k)=>v+(c1[k]-v)*f);
+  }
+  return stops.at(-1)[1];
+}
+
+function segX(p, q, poly){   // intersección del segmento p→q con el borde del polígono más cercana a p
+  let best = null, bt = 2;
+  for (let i=0, j=poly.length-1; i<poly.length; j=i++){
+    const [a1,b1] = poly[j], [a2,b2] = poly[i];
+    const d = (q[0]-p[0])*(b2-b1) - (q[1]-p[1])*(a2-a1); if (!d) continue;
+    const t = ((a1-p[0])*(b2-b1) - (b1-p[1])*(a2-a1)) / d;
+    const u = ((a1-p[0])*(q[1]-p[1]) - (b1-p[1])*(q[0]-p[0])) / d;
+    if (t>=0 && t<=1 && u>=0 && u<=1 && t<bt){ bt = t; best = [p[0]+(q[0]-p[0])*t, p[1]+(q[1]-p[1])*t]; }
+  }
+  return best;
+}
+function clipLine(ll, poly){  // recorta una polilínea a la parte dentro del polígono
+  const out = []; let cur = [], prevIn = false;
+  ll.forEach((p, i) => {
+    const pin = inPoly(p[0], p[1], poly);
+    if (i && pin !== prevIn){ const x = segX(ll[i-1], p, poly); if (x) cur.push(x); }
+    if (pin) cur.push(p);
+    else if (cur.length){ if (cur.length>1) out.push(cur); cur = []; }
+    prevIn = pin;
+  });
+  if (cur.length>1) out.push(cur);
+  return out;
+}
+
+function draw(){
+  const {W,H,vals,b,cx,cy} = grid;
+  // Máscara: celdas dentro del polígono (o todas si el área es un rectángulo)
+  const mask = new Uint8Array(W*H);
+  for (let r=0;r<H;r++){
+    const lat = b.n - (r+0.5)/H*(b.n-b.s);
+    for (let c=0;c<W;c++) mask[r*W+c] = !areaPoly || inPoly(lat, b.w + (c+0.5)/W*(b.e-b.w), areaPoly) ? 1 : 0;
+  }
+  grid.mask = mask;
+  let mn=Infinity, mx=-Infinity, sum=0, n=0, slopeSum=0, slopeMax=0;
+  for (let i=0;i<vals.length;i++) if (mask[i]){ const v=vals[i]; if (v<mn) mn=v; if (v>mx) mx=v; sum+=v; n++; }
+  if (!n) { msg('El polígono es demasiado pequeño para la resolución de los datos.', true); return; }
+  // Sombreado + pendientes
+  const cv = document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(W,H);
+  const az = 315*rad, alt = 45*rad;
+  const at = (c,r) => vals[Math.min(H-1,Math.max(0,r))*W + Math.min(W-1,Math.max(0,c))];
+  for (let r=0;r<H;r++) for (let c=0;c<W;c++){
+    if (!mask[r*W+c]) continue;
+    const dzdx = (at(c+1,r)-at(c-1,r))/(2*cx), dzdy = (at(c,r-1)-at(c,r+1))/(2*cy);
+    const sl = Math.atan(Math.hypot(dzdx,dzdy)), asp = Math.atan2(dzdy,-dzdx);
+    slopeSum += sl; if (sl>slopeMax) slopeMax=sl;
+    const hs = Math.max(0, Math.cos(alt)*Math.cos(sl) + Math.sin(alt)*Math.sin(sl)*Math.cos(az - Math.PI/2 + asp));
+    const col = hypso(mx>mn ? Math.min(1,Math.max(0,(vals[r*W+c]-mn)/(mx-mn))) : .5), k = 0.45 + 0.75*hs, i=(r*W+c)*4;
+    img.data[i]=Math.min(255,col[0]*k); img.data[i+1]=Math.min(255,col[1]*k); img.data[i+2]=Math.min(255,col[2]*k); img.data[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  if (shadeOverlay) map.removeLayer(shadeOverlay);
+  shadeOverlay = L.imageOverlay(cv.toDataURL(), [[b.s,b.w],[b.n,b.e]], {opacity:.6});
+  if ($('chkShade').checked) shadeOverlay.addTo(map);
+
+  // Curvas de nivel
+  const iv = $('interval').value === 'auto' ? niceInterval(mx-mn) : +$('interval').value;
+  const start = Math.ceil(mn/iv)*iv, levels = [];
+  for (let v=start; v<=mx; v+=iv) levels.push(+v.toFixed(3));
+  if (levels.length > 400) { msg('Demasiadas curvas: aumenta la equidistancia.', true); return; }
+  const toLL = p => [b.n - p[1]/H*(b.n-b.s), b.w + p[0]/W*(b.e-b.w)];
+  const onEdge = p => p[0]<=1e-6 || p[0]>=W-1e-6 || p[1]<=1e-6 || p[1]>=H-1e-6;
+  contours = [];
+  contourLayer.clearLayers();
+  for (const cont of d3.contours().size([W,H]).thresholds(levels)(Array.from(vals))){
+    const elev = cont.value, index = Math.round(elev/iv) % 5 === 0;
+    for (const poly of cont.coordinates) for (const ring of poly){
+      // Quita los tramos que corren por el borde del área (artefacto de los polígonos)
+      let lines=[], cur=[];
+      for (const p of ring){ if (onEdge(p)){ if (cur.length>1) lines.push(cur); cur=[]; } else cur.push(p); }
+      if (cur.length>1) lines.push(cur);
+      if (lines.length>1 && !onEdge(ring[0]) && ring.some(onEdge)){ const last=lines.pop(); lines[0]=last.concat(lines[0]); }
+      for (const ln of lines){
+        for (const ll of areaPoly ? clipLine(ln.map(toLL), areaPoly) : [ln.map(toLL)]){
+          contours.push({elev, index, ll});
+          L.polyline(ll, {color: index ? '#8a3b12' : '#c9783a', weight: index ? 2 : 1, opacity:.95, interactive:true})
+            .bindTooltip(`${fmt(elev, iv<1?1:0)} m`, {sticky:true}).addTo(contourLayer);
+        }
+      }
+    }
+  }
+  if (!$('chkCont').checked) map.removeLayer(contourLayer); else contourLayer.addTo(map);
+
+  const pm = areaPoly && polyMetrics(areaPoly);
+  const area = pm ? pm.area : grid.cx*W*grid.cy*H;
+  const fa = a => a>1e6 ? fmt(a/1e6,3)+' km²' : a>1e4 ? fmt(a/1e4,4)+' ha' : fmt(a,1)+' m²';
+  $('secStats').hidden = false;
+  $('stats').innerHTML = [
+    ['Cota mínima', fmt(mn)+' m'], ['Cota máxima', fmt(mx)+' m'], ['Desnivel', fmt(mx-mn)+' m'], ['Cota media', fmt(sum/n)+' m'],
+    ['Pendiente media', fmt(Math.tan(slopeSum/n)*100)+' %'], ['Pendiente máx.', fmt(Math.tan(slopeMax)*100,0)+' %'],
+    [pm ? 'Área polígono' : 'Área', fa(area)], pm ? ['Perímetro', fmt(pm.per,1)+' m'] : ['Equidistancia', iv+' m'],
+    ...(pm ? [['Vértices', areaPoly.length], ['Equidistancia', iv+' m']] : []),
+    ['Malla', `${W}×${H}`], ['Celda', `${fmt(cx)}×${fmt(cy)} m`]
+  ].map(([k,v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+  msg(`Listo: ${contours.length} curvas de nivel.`);
+  ['eDxf','eGeo','eXyz','bRedo'].forEach(id => $(id).disabled = false);
+  if (areaPoly) fillPolyTable();
+}
+$('bRedo').onclick = processArea;
+$('interval').onchange = () => grid && draw();
+$('res').onchange = () => grid && processArea();
+$('chkShade').onchange = e => shadeOverlay && (e.target.checked ? shadeOverlay.addTo(map) : map.removeLayer(shadeOverlay));
+$('chkCont').onchange = e => e.target.checked ? contourLayer.addTo(map) : map.removeLayer(contourLayer);
+
+// ---------- Perfil ----------
+async function computeProfile(){
+  const N = 300, samples = [];
+  const segs = profPts.slice(1).map((p,i) => dist(profPts[i],p)), total = segs.reduce((a,b)=>a+b,0);
+  for (let k=0;k<=N;k++){
+    let d = total*k/N, i=0; while (i<segs.length-1 && d>segs[i]) { d-=segs[i]; i++; }
+    const f = segs[i] ? Math.min(1,d/segs[i]) : 0, a=profPts[i], b=profPts[i+1];
+    samples.push([a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, total*k/N]);
+  }
+  let z = 14; while (z>6 && tilesFor(z,samples).length > 60) z--;
+  $('profInfo').textContent = 'Calculando perfil…';
+  try { await ensure(z, samples); } catch(e){ $('profInfo').textContent = e.message; return; }
+  const h = samples.map(s => elevSync(z,s[0],s[1]));
+  let up=0, down=0; for (let i=1;i<h.length;i++){ const d=h[i]-h[i-1]; d>0?up+=d:down-=d; }
+  drawProfile(samples.map(s=>s[2]), h);
+  $('profInfo').textContent = `Longitud ${total>1000?fmt(total/1000,2)+' km':fmt(total,0)+' m'} · Subida ${fmt(up,0)} m · Bajada ${fmt(down,0)} m · Pend. media ${fmt((h.at(-1)-h[0])/total*100)} %`;
+}
+function drawProfile(xs, ys){
+  const cv = $('prof'); cv.hidden = false;
+  const dpr = devicePixelRatio||1, Wp = cv.clientWidth, Hp = 150;
+  cv.width = Wp*dpr; cv.height = Hp*dpr;
+  const ctx = cv.getContext('2d'); ctx.scale(dpr,dpr);
+  const css = getComputedStyle(document.documentElement);
+  const mn = Math.min(...ys), mx = Math.max(...ys), pad = (mx-mn)*.08 || 1, L0=40, B=18;
+  const X = x => L0 + x/xs.at(-1)*(Wp-L0-6), Y = y => 6 + (1-(y-mn+pad)/(mx-mn+2*pad))*(Hp-B-6);
+  ctx.fillStyle = css.getPropertyValue('--muted'); ctx.font = '10px system-ui';
+  for (const v of [mn, (mn+mx)/2, mx]) ctx.fillText(Math.round(v), 2, Y(v)+3);
+  ctx.fillText('0', L0, Hp-4); const tl = xs.at(-1)>1000 ? fmt(xs.at(-1)/1000,1)+' km' : Math.round(xs.at(-1))+' m';
+  ctx.fillText(tl, Wp-ctx.measureText(tl).width-4, Hp-4);
+  ctx.beginPath(); ctx.moveTo(X(0), Hp-B);
+  xs.forEach((x,i)=>ctx.lineTo(X(x),Y(ys[i]))); ctx.lineTo(X(xs.at(-1)),Hp-B); ctx.closePath();
+  ctx.fillStyle = css.getPropertyValue('--accent-2'); ctx.fill();
+  ctx.beginPath(); xs.forEach((x,i)=> i?ctx.lineTo(X(x),Y(ys[i])):ctx.moveTo(X(x),Y(ys[i])));
+  ctx.strokeStyle = css.getPropertyValue('--accent'); ctx.lineWidth = 1.6; ctx.stroke();
+}
+
+// ---------- Puntos de levantamiento ----------
+const points = [];
+async function addPoint(lat, lng, gpsAlt, acc, src){
+  let dem = NaN; try { dem = await elevAt(lat,lng,15); } catch {}
+  const id = 'P' + String(points.length+1).padStart(3,'0'), u = toUTM(lat,lng);
+  const p = {id, lat, lng, e:u.x, n:u.y, zone:u.zone+u.hemi, dem, gpsAlt, acc, src};
+  points.push(p);
+  L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:2,fillColor:'#1f78ff',fillOpacity:1})
+    .bindTooltip(`${id} · ${fmt(dem)} m`, {permanent:false}).addTo(ptsLayer);
+  const tb = $('ptTable'); tb.hidden = false;
+  tb.tBodies[0].insertAdjacentHTML('beforeend',
+    `<tr><td>${id}</td><td>${u.x.toFixed(1)}</td><td>${u.y.toFixed(1)}</td><td>${fmt(dem)}</td><td>${acc!=null?fmt(acc):'—'}</td></tr>`);
+  $('ePts').disabled = false;
+}
+$('bGps').onclick = () => {
+  if (!navigator.geolocation) return msg('Este navegador no tiene geolocalización.', true);
+  const reads = [], btn = $('bGps'); btn.disabled = true; btn.textContent = 'Leyendo GNSS… 10 s';
+  const t0 = Date.now();
+  const wid = navigator.geolocation.watchPosition(p => reads.push(p.coords),
+    e => msg('GNSS: '+e.message, true), {enableHighAccuracy:true, maximumAge:0});
+  const tick = setInterval(() => btn.textContent = `Leyendo GNSS… ${Math.max(0,10-Math.round((Date.now()-t0)/1000))} s (${reads.length})`, 500);
+  setTimeout(() => {
+    navigator.geolocation.clearWatch(wid); clearInterval(tick); btn.disabled = false; btn.textContent = 'Capturar GNSS';
+    if (!reads.length) return msg('No se obtuvo señal GNSS.', true);
+    // Promedio ponderado por 1/precisión²
+    let sw=0, la=0, lo=0, al=0, aw=0;
+    for (const c of reads){ const w = 1/Math.max(c.accuracy,1)**2; sw+=w; la+=c.latitude*w; lo+=c.longitude*w;
+      if (c.altitude!=null){ al+=c.altitude*w; aw+=w; } }
+    const acc = Math.min(...reads.map(c=>c.accuracy));
+    addPoint(la/sw, lo/sw, aw?al/aw:null, acc, 'gnss');
+    map.setView([la/sw, lo/sw], Math.max(map.getZoom(), 16));
+    msg(`Punto GNSS con ${reads.length} lecturas, precisión ±${fmt(acc)} m.`);
+  }, 10000);
+};
+
+// ---------- Ir a coordenadas ----------
+function fromUTM(x, y, zone, south){
+  const a=6378137, f=1/298.257223563, k0=0.9996, e2=f*(2-f), ep2=e2/(1-e2), e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  x -= 500000; if (south) y -= 10000000;
+  const M = y/k0, mu = M/(a*(1-e2/4-3*e2**2/64-5*e2**3/256));
+  const φ1 = mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1**2/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu);
+  const N1=a/Math.sqrt(1-e2*Math.sin(φ1)**2), T1=Math.tan(φ1)**2, C1=ep2*Math.cos(φ1)**2;
+  const R1=a*(1-e2)/(1-e2*Math.sin(φ1)**2)**1.5, D=x/(N1*k0);
+  const lat = φ1-(N1*Math.tan(φ1)/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*ep2)*D**4/24+(61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*D**6/720);
+  const lon = (D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1*C1+8*ep2+24*T1*T1)*D**5/120)/Math.cos(φ1);
+  return [lat/rad, (zone-1)*6-180+3 + lon/rad];
+}
+function parseCoords(s){
+  s = s.trim().toUpperCase();
+  // UTM: "18N 707410 787325" o "18 N 707410, 787325"
+  let m = s.match(/^(\d{1,2})\s*([NS])[\s,;]+(\d+(?:\.\d+)?)[\s,;]+(\d+(?:\.\d+)?)$/);
+  if (m) return fromUTM(+m[3], +m[4], +m[1], m[2]==='S');
+  // Grados-minutos-segundos: 7°07'09"N 73°07'22"W
+  const dms = [...s.matchAll(/(-?\d+(?:\.\d+)?)\s*[°º\s]\s*(?:(\d+(?:\.\d+)?)\s*['′\s]\s*)?(?:(\d+(?:\.\d+)?)\s*["″]?\s*)?([NSEWO])/g)];
+  if (dms.length === 2){
+    const val = g => { let v = Math.abs(+g[1]) + (+g[2]||0)/60 + (+g[3]||0)/3600; if ('SWO'.includes(g[4]) || +g[1]<0) v=-v; return v; };
+    let [a, b] = dms; if ('EWO'.includes(a[4])) [a, b] = [b, a];
+    return [val(a), val(b)];
+  }
+  // Decimal: "7.1193, -73.1227" (también con espacio o punto y coma)
+  m = s.match(/^(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)$/);
+  if (m) return [+m[1], +m[2]];
+  return null;
+}
+let goMarker;
+$('goForm').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('goInput').value; if (!q.trim()) return;
+  let ll = parseCoords(q), label = q;
+  if (!ll){
+    $('goMsg').textContent = 'Buscando lugar…';
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+      const j = await r.json();
+      if (j[0]) { ll = [+j[0].lat, +j[0].lon]; label = j[0].display_name; }
+    } catch {}
+  }
+  if (!ll || Math.abs(ll[0])>90 || Math.abs(ll[1])>180){ $('goMsg').textContent = 'No se reconoció la coordenada o el lugar.'; return; }
+  map.setView(ll, Math.max(map.getZoom(), 16));
+  if (goMarker) map.removeLayer(goMarker);
+  goMarker = L.marker(ll).addTo(map);
+  const u = toUTM(ll[0], ll[1]);
+  let h = NaN; try { h = await elevAt(ll[0], ll[1], 15); } catch {}
+  const info = `${ll[0].toFixed(6)}, ${ll[1].toFixed(6)} · UTM ${u.zone}${u.hemi} E ${u.x.toFixed(1)} N ${u.y.toFixed(1)} · Cota ${fmt(h)} m`;
+  goMarker.bindPopup(`<b>${label.replace(/</g,'&lt;')}</b><br>${info}<br><button id="goAddPt">Agregar como punto</button>`).openPopup();
+  $('goMsg').textContent = info;
+  setTimeout(() => { const b = document.getElementById('goAddPt'); if (b) b.onclick = () => { addPoint(ll[0], ll[1], null, null, 'coordenada'); map.closePopup(); }; }, 0);
+};
+
+// ---------- Exportación ----------
+function download(name, text, type='text/plain'){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text],{type}));
+  a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+$('eGeo').onclick = () => download('curvas_nivel.geojson', JSON.stringify({type:'FeatureCollection',
+  features: contours.map(c => ({type:'Feature', properties:{cota:c.elev, maestra:c.index},
+    geometry:{type:'LineString', coordinates:c.ll.map(([la,lo])=>[+lo.toFixed(7),+la.toFixed(7),c.elev])}}))
+    .concat(areaPoly ? [{type:'Feature', properties:{tipo:'lindero', area_m2:+polyMetrics(areaPoly).area.toFixed(2), perimetro_m:+polyMetrics(areaPoly).per.toFixed(2)},
+      geometry:{type:'Polygon', coordinates:[[...areaPoly, areaPoly[0]].map(([la,lo])=>[+lo.toFixed(8),+la.toFixed(8)])]}}] : [])}), 'application/geo+json');
+$('ePoly').onclick = () => {
+  const {u, zone, area, per} = polyMetrics(areaPoly);
+  const rows = ['vertice,lat,lon,zona_utm,este,norte,cota_dem,distancia_al_siguiente_m'];
+  areaPoly.forEach((p,i) => rows.push(['V'+(i+1), p[0].toFixed(8), p[1].toFixed(8), zone+(p[0]<0?'S':'N'), u[i].x.toFixed(3), u[i].y.toFixed(3),
+    Number.isFinite(p.h)?p.h.toFixed(2):'', dist(p, areaPoly[(i+1)%areaPoly.length]).toFixed(3)].join(',')));
+  rows.push('', `area_m2,${area.toFixed(2)}`, `perimetro_m,${per.toFixed(2)}`);
+  download('poligono_vertices.csv', rows.join('\n'), 'text/csv');
+};
+$('eDxf').onclick = () => {
+  const zone = utmZone((grid.b.w+grid.b.e)/2), out = ['0','SECTION','2','ENTITIES'];
+  for (const c of contours){
+    const layer = c.index ? 'CURVAS_MAESTRAS' : 'CURVAS_INTERMEDIAS';
+    out.push('0','POLYLINE','8',layer,'66','1','70','8','10','0','20','0','30','0');
+    for (const [la,lo] of c.ll){ const u = toUTM(la,lo,zone);
+      out.push('0','VERTEX','8',layer,'10',u.x.toFixed(3),'20',u.y.toFixed(3),'30',c.elev.toFixed(3),'70','32'); }
+    out.push('0','SEQEND','8',layer);
+  }
+  if (areaPoly){
+    out.push('0','POLYLINE','8','LINDERO','66','1','70','9','10','0','20','0','30','0');
+    for (const p of areaPoly){ const u = toUTM(p[0],p[1],zone);
+      out.push('0','VERTEX','8','LINDERO','10',u.x.toFixed(3),'20',u.y.toFixed(3),'30',(Number.isFinite(p.h)?p.h:0).toFixed(3),'70','32'); }
+    out.push('0','SEQEND','8','LINDERO');
+    areaPoly.forEach((p,i) => { const u = toUTM(p[0],p[1],zone);
+      out.push('0','TEXT','8','LINDERO_ID','10',(u.x+1).toFixed(3),'20',(u.y+1).toFixed(3),'30','0','40','2','1','V'+(i+1)); });
+  }
+  for (const p of points){ const u = toUTM(p.lat,p.lng,zone);
+    out.push('0','POINT','8','PUNTOS','10',u.x.toFixed(3),'20',u.y.toFixed(3),'30',(p.dem||0).toFixed(3));
+    out.push('0','TEXT','8','PUNTOS_ID','10',(u.x+1).toFixed(3),'20',(u.y+1).toFixed(3),'30','0','40','1.5','1',p.id); }
+  out.push('0','ENDSEC','0','EOF');
+  download(`curvas_utm${zone}.dxf`, out.join('\r\n'));
+};
+$('eXyz').onclick = () => {
+  const {W,H,vals,b} = grid, zone = utmZone((b.w+b.e)/2), rows = ['lat,lon,este,norte,cota'];
+  for (let r=0;r<H;r++) for (let c=0;c<W;c++){
+    if (grid.mask && !grid.mask[r*W+c]) continue;
+    const lat = b.n-(r+.5)/H*(b.n-b.s), lng = b.w+(c+.5)/W*(b.e-b.w), u = toUTM(lat,lng,zone);
+    rows.push(`${lat.toFixed(7)},${lng.toFixed(7)},${u.x.toFixed(2)},${u.y.toFixed(2)},${vals[r*W+c].toFixed(2)}`);
+  }
+  download(`malla_xyz_utm${zone}.csv`, rows.join('\n'), 'text/csv');
+};
+$('ePts').onclick = () => download('puntos_levantamiento.csv', ['id,lat,lon,zona_utm,este,norte,cota_dem,alt_gnss,precision_m,origen']
+  .concat(points.map(p => [p.id,p.lat.toFixed(8),p.lng.toFixed(8),p.zone,p.e.toFixed(3),p.n.toFixed(3),
+    Number.isFinite(p.dem)?p.dem.toFixed(2):'', p.gpsAlt!=null?p.gpsAlt.toFixed(2):'', p.acc!=null?p.acc.toFixed(2):'', p.src].join(','))).join('\n'), 'text/csv');
+</script>
+</body>
+</html>
