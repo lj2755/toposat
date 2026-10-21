@@ -530,6 +530,9 @@ function buildWater(){
   // Rótulos
   const tag = (px, text, color, h = 7) => { const [x, z] = px2local(px), sp = labelSprite(text, color); sp.position.set(x, heightAt(x,z) + h, z); P.add(sp); };
   tag([1015,490], 'Planta de tratamiento', '#2f7d4f', 8);
+  for (const [px, text] of [[[760,545], 'Colector de aguas lluvias'], [[1093,560], 'Desarenador y descarga']]){
+    const [x, z] = px2local(px), sp = labelSprite(text, '#0f97a8'); sp.scale.multiplyScalar(1.8); sp.position.set(x, heightAt(x,z) + 7, z); groups.llu.add(sp);
+  }
   tag([786,680], 'Cisterna y bombas', '#1f6fb2', 6);
 }
 
@@ -640,8 +643,13 @@ function loop(t){
   try { await buildTerrain(); }
   catch (e) { $('loading').textContent = 'Error cargando datos: ' + e.message; return; }
   buildHouses(); buildTrees(); buildWater(); updateSun();
-  // Enlace directo a una vista: simulacion.html#aguas, #planta o #peaton
+  // Enlace directo a una vista: simulacion.html#aguas, #lluvias, #planta o #peaton
   setView({'#aguas':'vAguas', '#planta':'vPlanta', '#peaton':'vPeaton'}[location.hash] || 'vAerea');
+  if (location.hash === '#lluvias'){            // solo la red de aguas lluvias, vista de cerca desde el suroccidente
+    for (const id of ['lSup','lNeg','lGri','lPlanta','lArb']){ $(id).checked = false; $(id).dispatchEvent(new Event('change')); }
+    const [x, z] = px2local([660, 470]);
+    camera.position.set(x - 52, 118, z + 64); controls.target.set(x - 10, 0, z - 2); controls.update();
+  }
   const lotA = (() => { const p = LOT.map(px2local); let a = 0; p.forEach((q,i) => { const r = p[(i+1)%p.length]; a += q[0]*r[1] - r[0]*q[1]; }); return Math.abs(a)/2; })();
   const zs = LOT.map(px2local).map(([x,z]) => heightAt(x,z) + baseElev);
   $('stats').innerHTML = `Lote ≈ ${(lotA/10000).toFixed(2)} ha · Cotas del lindero ${Math.min(...zs).toFixed(0)}–${Math.max(...zs).toFixed(0)} m s.n.m. · ${HOUSES.filter(h=>!h.existing && h.area).length} casas proyectadas`;
