@@ -425,6 +425,11 @@ const LAYERS = {lySupply:'supply', lyBlack:'black', lyGrey:'grey', lyStorm:'stor
 function applyLayers(){ for (const id in LAYERS) groups[LAYERS[id]].style.display = document.getElementById(id).checked ? '' : 'none'; }
 for (const id in LAYERS) document.getElementById(id).addEventListener('change', applyLayers);
 draw();
+// Enlace directo aguas/#lluvias: deja solo la red de aguas lluvias en el esquema
+if (location.hash === '#lluvias'){
+  ['lySupply','lyBlack','lyGrey','lyTreat'].forEach(id => document.getElementById(id).checked = false);
+  applyLayers(); document.getElementById('s-plano').scrollIntoView();
+}
 </script>
 
 </body>
