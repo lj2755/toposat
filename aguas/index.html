@@ -425,9 +425,10 @@ const LAYERS = {lySupply:'supply', lyBlack:'black', lyGrey:'grey', lyStorm:'stor
 function applyLayers(){ for (const id in LAYERS) groups[LAYERS[id]].style.display = document.getElementById(id).checked ? '' : 'none'; }
 for (const id in LAYERS) document.getElementById(id).addEventListener('change', applyLayers);
 draw();
-// Enlace directo aguas/#lluvias: deja solo la red de aguas lluvias en el esquema
-if (location.hash === '#lluvias'){
-  ['lySupply','lyBlack','lyGrey','lyTreat'].forEach(id => document.getElementById(id).checked = false);
+// Enlaces directos que dejan una sola red en el esquema: aguas/#potable, #negras, #grises o #lluvias
+const VISTAS = {'#potable':['lySupply'], '#negras':['lyBlack','lyTreat'], '#grises':['lyGrey','lyTreat'], '#lluvias':['lyStorm']};
+if (VISTAS[location.hash]){
+  for (const id in LAYERS) if (id !== 'lyCotas') document.getElementById(id).checked = VISTAS[location.hash].includes(id);
   applyLayers(); document.getElementById('s-plano').scrollIntoView();
 }
 </script>

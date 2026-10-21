@@ -46,6 +46,10 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 | Agua lluvia | ≈ 6,6 m³/día aprovechables · tanque de 2 m³ por casa |
 | Aguas lluvias | ≈ 170 L/s de diseño · cunetas, colector PVC 14″–16″, desarenador y descarga con disipador al oriente |
 
+[![Aguas negras en el documento: esquema con solo la red de aguas negras y la planta de tratamiento sobre el plano, diagrama del tratamiento y predimensionamiento](img/aguas-negras-documento.jpg)](https://lj2755.github.io/toposat/aguas/#negras)
+
+*Aguas negras en el documento: el esquema con solo esa red (por el centro de las vías y por gravedad hasta la planta), el diagrama del tratamiento y el predimensionamiento: 3,2 m³/día, tanque séptico ≈ 15 m³ y filtro anaerobio FAFA ≈ 5 m³. [Abrir el documento en esta vista](https://lj2755.github.io/toposat/aguas/#negras).*
+
 [![Aguas lluvias en el documento: esquema con solo la red de cunetas, colector y desarenador sobre el plano, y tabla de predimensionamiento](img/aguas-lluvias-documento.jpg)](https://lj2755.github.io/toposat/aguas/#lluvias)
 
 *Aguas lluvias en el documento: el esquema con solo esa red (cunetas a ambos lados de las vías, colector al oriente y desarenador D) y la sección 3 con el caudal de diseño (≈ 170 L/s) y el tamaño de cada elemento. [Abrir el documento en esta vista](https://lj2755.github.io/toposat/aguas/#lluvias).*
