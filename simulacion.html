@@ -743,6 +743,11 @@ function loop(t){
   // Vistas de una sola red: #potable, #negras, #grises o #lluvias (sin árboles y desde arriba, para ver las tuberías)
   const SOLO = {'#potable':['lSup'], '#negras':['lNeg','lPlanta'], '#grises':['lGri','lPlanta'], '#lluvias':['lLlu']}[location.hash];
   if (location.hash === '#noche') nightView();                 // enlace directo: simulacion.html#noche
+  if (location.hash === '#plaza-noche'){            // la plaza iluminada, vista desde el suroccidente
+    nightView();
+    const [x, z] = px2local([975, 622]), y = heightAt(x, z);
+    camera.position.set(x - 26, y + 15, z + 24); controls.target.set(x + 1, y, z - 2); controls.update();
+  }
   if (location.hash === '#peaton-noche'){          // caminando de noche por la vía oriental, pasada la portería
     nightView(); setView('vPeaton');
     const [x, z] = px2local([699, 590]), y = heightAt(x, z) + 1.7;
