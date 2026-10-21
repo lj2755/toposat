@@ -31,6 +31,8 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 ## Diseño previo del sistema de aguas
 
+[![Documento de diseño previo del sistema de aguas: resumen en cifras y esquema de redes de agua potable, aguas negras y grises con la planta de tratamiento sobre el plano](img/aguas-documento.jpg)](https://lj2755.github.io/toposat/aguas/)
+
 **[Sistema de aguas del Condominio Pontezuela](https://lj2755.github.io/toposat/aguas/)** (`aguas/index.html`): anteproyecto conceptual de agua potable, aguas negras y grises por separado, planta de tratamiento y aprovechamiento de lluvia, con el esquema de redes sobre el plano y la memoria de cálculo resumida.
 
 | | Diseño previo |
