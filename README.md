@@ -16,6 +16,12 @@ Levantamiento topográfico en el navegador con modelos de elevación satelital (
 
 No necesita instalación ni servidor propio: son páginas estáticas.
 
+## TopoSat en uso
+
+[![TopoSat con las curvas de nivel cada 5 m y el sombreado del relieve en un área de 98 ha alrededor del condominio](img/toposat-curvas.jpg)](https://lj2755.github.io/toposat/)
+
+*Área de 1,1 × 0,9 km alrededor del condominio: curvas de nivel cada 5 m (maestras cada 25 m), sombreado hipsométrico y lectura de coordenadas y cota bajo el cursor. Cotas entre 2 113 y 2 172 m s.n.m.*
+
 ## Publicar en GitHub Pages
 
 ### Opción A: desde la página de GitHub (sin comandos)
