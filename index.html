@@ -522,7 +522,8 @@ function draw(){
   for (let v=start; v<=mx; v+=iv) levels.push(+v.toFixed(3));
   if (levels.length > 400) { msg('Demasiadas curvas: aumenta la equidistancia.', true); return; }
   const toLL = p => [b.n - p[1]/H*(b.n-b.s), b.w + p[0]/W*(b.e-b.w)];
-  const onEdge = p => p[0]<=1e-6 || p[0]>=W-1e-6 || p[1]<=1e-6 || p[1]>=H-1e-6;
+  // d3-contour coloca el borde de la malla a media celda: x = 0,5 y x = W − 0,5 (igual en y)
+  const e = 0.5 + 1e-6, onEdge = p => p[0]<=e || p[0]>=W-e || p[1]<=e || p[1]>=H-e;
   contours = [];
   contourLayer.clearLayers();
   for (const cont of d3.contours().size([W,H]).thresholds(levels)(Array.from(vals))){
