@@ -28,6 +28,7 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:8px;padding:6px 10px}
 button:hover{border-color:var(--accent)}
 button.on{background:var(--accent-2);border-color:var(--accent)}
+.sw{display:inline-block;width:18px;height:4px;border-radius:2px}
 #info{font-size:12px;background:var(--accent-2);border-radius:8px;padding:8px;display:none;margin-top:8px}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--veil);color:var(--on-veil);padding:16px;text-align:center;font-size:15px;z-index:10}
 #toggle{display:none}
@@ -53,6 +54,7 @@ button.on{background:var(--accent-2);border-color:var(--accent)}
     <button id="vAerea" class="on">Aérea</button>
     <button id="vPlanta">Planta</button>
     <button id="vPeaton">Peatón</button>
+    <button id="vAguas">Planta de agua</button>
   </div>
   <div class="note" id="walkHelp" style="display:none">Peatón: W/A/S/D o flechas para caminar, arrastra para mirar.</div>
 
@@ -61,6 +63,13 @@ button.on{background:var(--accent-2);border-color:var(--accent)}
   <label><input type="checkbox" id="lExist" checked> Construcciones existentes</label>
   <label><input type="checkbox" id="lArb" checked> Árboles y palmas</label>
   <label><input type="checkbox" id="lTraz" checked> Vías, lindero y cesión</label>
+
+  <h2>Redes de agua (diseño previo)</h2>
+  <label><input type="checkbox" id="lSup" checked> <span class="sw" style="background:#1f6fb2"></span> Agua potable</label>
+  <label><input type="checkbox" id="lNeg" checked> <span class="sw" style="background:#7a4a24"></span> Aguas negras</label>
+  <label><input type="checkbox" id="lGri" checked> <span class="sw" style="background:#6f7f8f"></span> Aguas grises</label>
+  <label><input type="checkbox" id="lPlanta" checked> <span class="sw" style="background:#2f7d4f"></span> Planta, cisterna y tanques de lluvia</label>
+  <div class="note">Las tuberías van enterradas; aquí se dibujan sobre el terreno, más gruesas, para poder verlas. Las flechas indican el sentido del flujo.</div>
   <div class="row" style="margin-top:6px"><span style="width:92px">Plano CAD</span><input type="range" id="planOp" min="0" max="1" step="0.05" value="0"></div>
   <div class="row"><span style="width:92px">Exag. vertical</span><input type="range" id="exag" min="1" max="3" step="0.25" value="1"><b id="exagV">1×</b></div>
 
@@ -75,7 +84,7 @@ button.on{background:var(--accent-2);border-color:var(--accent)}
 
   <div id="info"></div>
   <div class="note" id="stats"></div>
-  <div class="note">Haz clic en una casa para ver sus datos. Terreno: SRTM (~30 m), así que las pendientes son aproximadas; las casas se asientan sobre una plataforma según el terreno.</div>
+  <div class="note">Haz clic en una casa, una tubería o un tanque para ver sus datos. Terreno: SRTM (~30 m), así que las pendientes son aproximadas; las casas se asientan sobre una plataforma según el terreno.</div>
   <div class="note">Imágenes © Esri, Maxar, Earthstar Geographics · Elevación: AWS Terrain Tiles (SRTM).</div>
 </div>
 
@@ -213,7 +222,8 @@ sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.6;
 scene.add(sun, sun.target);
 
 const world = new THREE.Group(); scene.add(world);
-const groups = {casas:new THREE.Group(), exist:new THREE.Group(), arb:new THREE.Group()};
+const groups = {casas:new THREE.Group(), exist:new THREE.Group(), arb:new THREE.Group(),
+  sup:new THREE.Group(), neg:new THREE.Group(), gri:new THREE.Group(), planta:new THREE.Group()};
 Object.values(groups).forEach(g => world.add(g));
 
 let heights, NGRID, STEP, baseElev, terrainMesh, sat, texCanvas, texCtx, texture, planImg;
@@ -400,6 +410,107 @@ function buildTrees(){
   });
 }
 
+// =================== Redes de agua y planta de tratamiento ===================
+// Mismos trazados que el documento "Sistema de aguas del Condominio Pontezuela" (píxeles del plano; el orden es el sentido del flujo).
+const NETS = {
+  sup: {color:0x1f6fb2, lines:[[[786,752],[786,698]], [[758,686],[694,686],[709,500],[718,467],[728,440],[728,150]],
+        [[718,474],[165,474]], [[400,474],[400,150]], [[728,434],[915,434],[945,405]], [[786,664],[786,655]], [[806,664],[812,622]]]},
+  gri: {color:0x6f7f8f, lines:[[[391,152],[391,465]], [[168,465],[703,465]], [[719,152],[719,452],[703,465]],
+        [[683,745],[686,700],[703,515]], [[703,465],[703,512]], [[703,512],[915,512],[915,481],[925,481]], [[951,481],[960,481]]]},
+  neg: {color:0x7a4a24, lines:[[[385,152],[385,459]], [[168,459],[697,459]], [[713,152],[713,447],[697,459]],
+        [[677,745],[680,700],[697,520]], [[697,459],[697,520]], [[697,520],[925,520]], [[1000,518],[1086,516]]]},
+};
+const WATER_INFO = {
+  sup: {name:'Red de agua potable', desc:'PVC 2½″ por los andenes · 16,8 m³/día · presión con bombeo desde la cisterna'},
+  neg: {name:'Red de aguas negras', desc:'PVC sanitaria 6″, pendiente ≥ 1 % · 3,2 m³/día hacia el tanque séptico'},
+  gri: {name:'Red de aguas grises', desc:'PVC sanitaria 6″, paralela a la de negras · 7,5 m³/día hacia el humedal'},
+};
+function labelSprite(text, color){
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), fs = 44;
+  ctx.font = `700 ${fs}px system-ui, sans-serif`;
+  const w = Math.ceil(ctx.measureText(text).width) + 36; cv.width = w; cv.height = fs + 30;
+  ctx.font = `700 ${fs}px system-ui, sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,.93)'; ctx.beginPath(); ctx.roundRect(0, 0, w, cv.height, 14); ctx.fill();
+  ctx.fillStyle = color; ctx.fillRect(0, 0, 10, cv.height);
+  ctx.fillStyle = '#1d2420'; ctx.textBaseline = 'middle'; ctx.fillText(text, 22, cv.height/2 + 2);
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
+  sp.scale.set(w/cv.height*2.6, 2.6, 1); sp.renderOrder = 10; return sp;
+}
+function buildWater(){
+  // Tuberías y flechas
+  for (const [key, net] of Object.entries(NETS)){
+    const mat = new THREE.MeshLambertMaterial({color:net.color}), g = groups[key];
+    for (const line of net.lines){
+      const pts = [];
+      for (let i = 1; i < line.length; i++){
+        const a = px2local(line[i-1]), b = px2local(line[i]), L = Math.hypot(b[0]-a[0], b[1]-a[1]), n = Math.max(1, Math.ceil(L/1.5));
+        for (let k = (i === 1 ? 0 : 1); k <= n; k++){ const x = a[0]+(b[0]-a[0])*k/n, z = a[1]+(b[1]-a[1])*k/n; pts.push(new THREE.Vector3(x, heightAt(x,z) + .25, z)); }
+      }
+      if (pts.length < 2) continue;
+      const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length*2, .22, 8, false), mat);
+      tube.userData = {water: WATER_INFO[key], center:[pts[0].x, pts[0].z]}; g.add(tube);
+      const len = curve.getLength();
+      for (let d = 6; d < len - 2; d += 14){            // flechas de sentido de flujo
+        const t = d/len, p = curve.getPointAt(t), tg = curve.getTangentAt(t);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(.55, 1.4, 10), mat);
+        cone.position.copy(p).add(new THREE.Vector3(0, .15, 0));
+        cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tg.normalize());
+        cone.userData = tube.userData; g.add(cone);
+      }
+    }
+  }
+  // Planta de tratamiento, cisterna y tanques de lluvia
+  const P = groups.planta;
+  const concrete = new THREE.MeshLambertMaterial({color:0xb9b6ad}), lid = new THREE.MeshLambertMaterial({color:0x7d8a84});
+  const tank = (px, h, name, desc, lidMat = lid) => {
+    const c = px.map(px2local), y0 = Math.min(...c.map(([x,z]) => heightAt(x,z)));
+    const body = prism(c, y0 - .3, y0 + h, concrete), top = prism(c, y0 + h, y0 + h + .12, lidMat);
+    const info = {water:{name, desc}, center:c.reduce((s,p)=>[s[0]+p[0]/4, s[1]+p[1]/4],[0,0])};
+    body.userData = top.userData = info; P.add(body, top); return {c, y0};
+  };
+  tank(rect(925,506,971,530), .6, 'Tanque séptico (aguas negras)', '≈ 15 m³ en dos cámaras, enterrado · limpieza de lodos cada 2 años', new THREE.MeshLambertMaterial({color:0x7a4a24}));
+  tank(rect(976,506,1000,530), .6, 'Filtro anaerobio FAFA', '≈ 5 m³ con lecho de grava · recibe el efluente del tanque séptico', new THREE.MeshLambertMaterial({color:0x8d5d36}));
+  tank(rect(925,470,951,492), .5, 'Sedimentador de aguas grises', '≈ 4 m³ · retiene sólidos antes del humedal', new THREE.MeshLambertMaterial({color:0x6f7f8f}));
+  tank(rect(1086,506,1108,526), .4, 'Caja de salida y muestreo', 'Une los efluentes tratados · punto de toma de muestras para CORNARE', new THREE.MeshLambertMaterial({color:0x2f7d4f}));
+  // Humedal: lecho de grava sembrado
+  const hc = rect(960,442,1105,494).map(px2local), hy = Math.max(...hc.map(([x,z]) => heightAt(x,z))) + .2;
+  const bed = prism(hc, hy - .9, hy, new THREE.MeshLambertMaterial({color:0x8a7f68}));
+  const hInfo = {water:{name:'Humedal de flujo subsuperficial (aguas grises)', desc:'≈ 120 m² · 0,6 m de grava sembrada con heliconias, papiro o juncos · sin agua a la vista'}, center:hc[0]};
+  bed.userData = hInfo; P.add(bed);
+  const leaf = new THREE.MeshLambertMaterial({color:0x4f8a35}), leaf2 = new THREE.MeshLambertMaterial({color:0x6aa03c});
+  const [minX, maxX] = [Math.min(...hc.map(p=>p[0])), Math.max(...hc.map(p=>p[0]))], [minZ, maxZ] = [Math.min(...hc.map(p=>p[1])), Math.max(...hc.map(p=>p[1]))];
+  for (let x = minX + .7; x < maxX - .4; x += 1.1) for (let z = minZ + .7; z < maxZ - .4; z += 1.1){
+    const r = Math.abs(Math.sin(x*12.9898 + z*78.233) * 43758.5453) % 1, hgt = .9 + r*1.1;
+    const pl = new THREE.Mesh(new THREE.ConeGeometry(.35 + r*.2, hgt, 6), r > .5 ? leaf : leaf2);
+    pl.position.set(x + (r-.5)*.5, hy + hgt/2, z + (r-.5)*.5); pl.castShadow = true; pl.userData = hInfo; P.add(pl);
+  }
+  // Salida del efluente tratado
+  { const pts = [[1097,526],[1097,560],[1150,560]].map(px2local).map(([x,z]) => new THREE.Vector3(x, heightAt(x,z) + .25, z));
+    const out = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0), 20, .18, 8, false), new THREE.MeshLambertMaterial({color:0x2f7d4f}));
+    out.userData = {water:{name:'Efluente tratado', desc:'Hacia reúso en riego, infiltración o vertimiento, según el permiso de CORNARE'}, center:[pts[0].x, pts[0].z]}; P.add(out); }
+  // Cisterna enterrada y caseta de bombas junto a la portería
+  tank(rect(758,664,786,698), .25, 'Cisterna de agua potable', '25 m³ enterrada, dos compartimentos · ≈ 1 día de consumo máximo', new THREE.MeshLambertMaterial({color:0x1f6fb2}));
+  { const c = rect(788,666,812,690).map(px2local), y0 = Math.min(...c.map(([x,z]) => heightAt(x,z)));
+    const hut = new THREE.Group(); hut.add(prism(c, y0 - .3, y0 + 2.4, matWall), prism(c, y0 + 2.4, y0 + 2.6, matBase));
+    hut.traverse(o => o.userData = {water:{name:'Caseta de bombas', desc:'2 bombas de 2 HP (una de reserva) con variador y tanque hidroacumulador'}, center:c[0]}); P.add(hut); }
+  // Tanque de agua lluvia de 2 m³ junto a cada casa nueva
+  const rainMat = new THREE.MeshLambertMaterial({color:0x2e4a3a});
+  for (const h of HOUSES){
+    if (h.existing || !h.area) continue;
+    const c = h.local || h.px.map(px2local), cx = c.reduce((s,p)=>s+p[0],0)/4, cz = c.reduce((s,p)=>s+p[1],0)/4;
+    const [x0, z0] = c[2], d = Math.hypot(x0-cx, z0-cz), x = x0 + (x0-cx)/d*1.3, z = z0 + (z0-cz)/d*1.3, y = heightAt(x, z);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(.68, .68, 1.5, 16), rainMat);
+    t.position.set(x, y + .75, z); t.castShadow = true;
+    t.userData = {water:{name:`Tanque de agua lluvia · ${h.name}`, desc:'2 m³ · recoge el agua del techo para sanitarios y riego'}, center:[x, z]}; P.add(t);
+  }
+  // Rótulos
+  const tag = (px, text, color, h = 7) => { const [x, z] = px2local(px), sp = labelSprite(text, color); sp.position.set(x, heightAt(x,z) + h, z); P.add(sp); };
+  tag([1015,490], 'Planta de tratamiento', '#2f7d4f', 8);
+  tag([786,680], 'Cisterna y bombas', '#1f6fb2', 6);
+}
+
 // =================== Sol ===================
 function updateSun(){
   const hour = +$('hora').value, month = +$('mes').value, doy = month*30.4 + 15;
@@ -419,11 +530,15 @@ function updateSun(){
 // =================== Cámara y vistas ===================
 let walking = false; const keys = {};
 function setView(v){
-  ['vAerea','vPlanta','vPeaton'].forEach(id => $(id).classList.toggle('on', id === v));
+  ['vAerea','vPlanta','vPeaton','vAguas'].forEach(id => $(id).classList.toggle('on', id === v));
   walking = v === 'vPeaton'; $('walkHelp').style.display = walking ? 'block' : 'none';
   controls.enabled = true;
   if (v === 'vAerea'){ camera.position.set(-90, 95, 150); controls.target.set(0, 0, 0); controls.maxPolarAngle = Math.PI*.495; }
   if (v === 'vPlanta'){ camera.position.set(0, 230, 0.01); controls.target.set(0, 0, 0); }
+  if (v === 'vAguas'){
+    const [x, z] = px2local([1015, 490]), y = heightAt(x, z) * ex();
+    camera.position.set(x + 22, y + 34, z - 26); controls.target.set(x - 4, y, z + 3);
+  }
   if (v === 'vPeaton'){
     const [x, z] = px2local([680, 735]);
     camera.position.set(x, heightAt(x, z) + 1.7 * ex(), z);
@@ -454,9 +569,15 @@ canvas.addEventListener('pointerup', e => {
   if (!downAt || Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]) > 4) return;
   mouse.set(e.clientX/innerWidth*2 - 1, -e.clientY/innerHeight*2 + 1);
   ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects([groups.casas, groups.exist].filter(g => g.visible), true)[0];
+  const hit = ray.intersectObjects([groups.casas, groups.exist, groups.planta, groups.sup, groups.neg, groups.gri].filter(g => g.visible), true)
+    .find(h => h.object.userData && (h.object.userData.house || h.object.userData.water));
   const info = $('info');
   if (!hit){ info.style.display = 'none'; return; }
+  if (hit.object.userData.water){
+    const {water} = hit.object.userData, p = hit.point;
+    info.innerHTML = `<b>${water.name}</b><br>${water.desc}<br>Cota del terreno aprox.: ${(heightAt(p.x, p.z) + baseElev).toFixed(1)} m s.n.m.`;
+    info.style.display = 'block'; return;
+  }
   const {house, floorElev, center} = hit.object.userData;
   const [E, N] = [EC + center[0], NC - center[1]], [lat, lon] = plane2geo(E, N);
   info.innerHTML = `<b>${house.name}</b><br>` + (house.area ? `Área construida: ${house.area.toLocaleString('es')} m²<br>` : '') +
@@ -467,6 +588,11 @@ canvas.addEventListener('pointerup', e => {
 $('vAerea').onclick = () => setView('vAerea');
 $('vPlanta').onclick = () => setView('vPlanta');
 $('vPeaton').onclick = () => setView('vPeaton');
+$('vAguas').onclick = () => setView('vAguas');
+$('lSup').onchange = e => groups.sup.visible = e.target.checked;
+$('lNeg').onchange = e => groups.neg.visible = e.target.checked;
+$('lGri').onchange = e => groups.gri.visible = e.target.checked;
+$('lPlanta').onchange = e => groups.planta.visible = e.target.checked;
 $('lCasas').onchange = e => groups.casas.visible = e.target.checked;
 $('lExist').onchange = e => groups.exist.visible = e.target.checked;
 $('lArb').onchange = e => groups.arb.visible = e.target.checked;
@@ -490,7 +616,9 @@ function loop(t){
   resize();
   try { await buildTerrain(); }
   catch (e) { $('loading').textContent = 'Error cargando datos: ' + e.message; return; }
-  buildHouses(); buildTrees(); updateSun(); setView('vAerea');
+  buildHouses(); buildTrees(); buildWater(); updateSun();
+  // Enlace directo a una vista: simulacion.html#aguas, #planta o #peaton
+  setView({'#aguas':'vAguas', '#planta':'vPlanta', '#peaton':'vPeaton'}[location.hash] || 'vAerea');
   const lotA = (() => { const p = LOT.map(px2local); let a = 0; p.forEach((q,i) => { const r = p[(i+1)%p.length]; a += q[0]*r[1] - r[0]*q[1]; }); return Math.abs(a)/2; })();
   const zs = LOT.map(px2local).map(([x,z]) => heightAt(x,z) + baseElev);
   $('stats').innerHTML = `Lote ≈ ${(lotA/10000).toFixed(2)} ha · Cotas del lindero ${Math.min(...zs).toFixed(0)}–${Math.max(...zs).toFixed(0)} m s.n.m. · ${HOUSES.filter(h=>!h.existing && h.area).length} casas proyectadas`;
