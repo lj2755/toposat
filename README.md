@@ -73,6 +73,10 @@ Es un predimensionamiento: no reemplaza el diseño hidrosanitario firmado por un
 
 *El condominio a las 7:30 p. m. con la iluminación solar encendida. [Abrir la simulación de noche](https://lj2755.github.io/toposat/simulacion.html#noche).*
 
+[![Vista peatonal de noche por la vía oriental: postes solares a ambos lados, ventanas encendidas y el kiosko comunal iluminado al fondo](img/simulacion-peatonal-noche.jpg)](https://lj2755.github.io/toposat/simulacion.html#peaton-noche)
+
+*Caminando de noche por la vía oriental, pasada la portería: postes solares de 4 m a ambos lados y el kiosko comunal iluminado al fondo. [Abrir esta vista](https://lj2755.github.io/toposat/simulacion.html#peaton-noche).*
+
 [![Documento de iluminación LED solar: resumen en cifras y esquema nocturno sobre el plano con postes de vía, luminarias perimetrales, balizas junto a la cesión y sistema solar central en la portería](img/iluminacion-documento.jpg)](https://lj2755.github.io/toposat/iluminacion/)
 
 **[Iluminación LED solar del Condominio Pontezuela](https://lj2755.github.io/toposat/iluminacion/)** (`iluminacion/index.html`): anteproyecto conceptual con el esquema nocturno sobre el plano, niveles de luz por zona, luminarias autónomas, sistema solar central de la portería, cuidado de la cesión ambiental, mantenimiento, normativa y memoria de cálculo. Es un predimensionamiento: los niveles de luz deben confirmarse con un cálculo fotométrico y la instalación requiere diseño eléctrico firmado y certificación RETIE.
