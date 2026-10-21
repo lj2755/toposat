@@ -66,6 +66,20 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 Es un predimensionamiento: no reemplaza el diseño hidrosanitario firmado por un ingeniero ni el permiso de vertimiento de CORNARE. Las redes y la planta también se ven en la [simulación 3D](https://lj2755.github.io/toposat/simulacion.html#aguas).
 
+## Iluminación LED solar
+
+[![Simulación 3D de noche: postes solares en las vías y el perímetro, plaza iluminada, ventanas encendidas y paneles del sistema central en el techo de la portería](img/simulacion-noche.jpg)](https://lj2755.github.io/toposat/simulacion.html#noche)
+
+*El condominio a las 7:30 p. m. con la iluminación solar encendida. [Abrir la simulación de noche](https://lj2755.github.io/toposat/simulacion.html#noche).*
+
+| | Diseño previo |
+|---|---|
+| Vías internas | 10 postes solares de 4 m · LED 30 W · panel 100 Wp · batería LiFePO₄ 12,8 V 70 Ah |
+| Perímetro | 17 luminarias solares de 3 m · LED 15 W con sensor de movimiento · panel 40 Wp |
+| Borde de la cesión | 5 balizas ámbar (2 200 K) orientadas hacia el condominio; la cesión queda sin luz |
+| Zonas comunes | Sistema central en la portería: 1,35 kWp, baterías de 7,2 kWh e inversor híbrido de 3 kVA para la plaza, el kiosko, la portería, las cámaras y el control de acceso |
+| Total | 48 puntos de luz · 3,1 kWp de paneles · ≈ 6,3 kWh por noche · luz cálida de 3 000 K · sin consumo de la red |
+
 ## Publicar en GitHub Pages
 
 ### Opción A: desde la página de GitHub (sin comandos)
