@@ -46,6 +46,10 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 | Agua lluvia | ≈ 6,6 m³/día aprovechables · tanque de 2 m³ por casa |
 | Aguas lluvias | ≈ 170 L/s de diseño · cunetas, colector PVC 14″–16″, desarenador y descarga con disipador al oriente |
 
+[![Agua potable en el documento: esquema con solo la red de agua potable sobre el plano y sección de suministro con fuente, cisterna, bombeo y predimensionamiento](img/agua-potable-documento.jpg)](https://lj2755.github.io/toposat/aguas/#potable)
+
+*Agua potable en el documento: el esquema con solo esa red (desde el acueducto a la cisterna junto a la portería y, con bombeo, por los andenes de las vías) y la sección 1 con la fuente, por qué se usa cisterna y bombeo, el predimensionamiento (16,8 m³/día, cisterna de 25 m³, 2 bombas de 2 HP, red de 2½″) y el aprovechamiento de agua lluvia. [Abrir el documento en esta vista](https://lj2755.github.io/toposat/aguas/#potable).*
+
 [![Aguas negras en el documento: esquema con solo la red de aguas negras y la planta de tratamiento sobre el plano, diagrama del tratamiento y predimensionamiento](img/aguas-negras-documento.jpg)](https://lj2755.github.io/toposat/aguas/#negras)
 
 *Aguas negras en el documento: el esquema con solo esa red (por el centro de las vías y por gravedad hasta la planta), el diagrama del tratamiento y el predimensionamiento: 3,2 m³/día, tanque séptico ≈ 15 m³ y filtro anaerobio FAFA ≈ 5 m³. [Abrir el documento en esta vista](https://lj2755.github.io/toposat/aguas/#negras).*
