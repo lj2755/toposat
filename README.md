@@ -50,6 +50,10 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 *Aguas negras en el documento: el esquema con solo esa red (por el centro de las vías y por gravedad hasta la planta), el diagrama del tratamiento y el predimensionamiento: 3,2 m³/día, tanque séptico ≈ 15 m³ y filtro anaerobio FAFA ≈ 5 m³. [Abrir el documento en esta vista](https://lj2755.github.io/toposat/aguas/#negras).*
 
+[![Aguas grises en el documento: esquema con solo la red de aguas grises y la planta de tratamiento sobre el plano, diagrama del tratamiento y predimensionamiento](img/aguas-grises-documento.jpg)](https://lj2755.github.io/toposat/aguas/#grises)
+
+*Aguas grises en el documento: el esquema con solo esa red (paralela a la de negras, hasta el sedimentador S y el humedal), el diagrama del tratamiento y el predimensionamiento: 7,5 m³/día, trampa de grasas en cada cocina, sedimentador ≈ 4 m³ y humedal de flujo subsuperficial ≈ 120 m². [Abrir el documento en esta vista](https://lj2755.github.io/toposat/aguas/#grises).*
+
 [![Aguas lluvias en el documento: esquema con solo la red de cunetas, colector y desarenador sobre el plano, y tabla de predimensionamiento](img/aguas-lluvias-documento.jpg)](https://lj2755.github.io/toposat/aguas/#lluvias)
 
 *Aguas lluvias en el documento: el esquema con solo esa red (cunetas a ambos lados de las vías, colector al oriente y desarenador D) y la sección 3 con el caudal de diseño (≈ 170 L/s) y el tamaño de cada elemento. [Abrir el documento en esta vista](https://lj2755.github.io/toposat/aguas/#lluvias).*
