@@ -22,6 +22,9 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 *Lote del condominio (lindero en amarillo) con curvas de nivel cada 2 m, coloreadas por cota y rotuladas sobre la línea: de 2 126 m (azul claro, al este) a 2 134 m (naranja, al oeste). Abajo, la lectura de coordenadas y cota bajo el cursor.*
 
+[![Perfil del terreno explicado: mapa del recorrido de A a B pasando por el condominio y gráfica de la altura en cada punto](img/toposat-perfil.png)](https://lj2755.github.io/toposat/)
+
+*Perfil del terreno de 1,09 km entre A (noroeste) y B (sureste), pasando por el condominio. Arriba, el recorrido en el mapa; abajo, la altura del terreno en cada punto: el punto más alto (2 145 m), el más bajo (2 118 m) y el condominio (2 130 m).*
 
 ## Publicar en GitHub Pages
 
