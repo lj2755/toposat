@@ -11,7 +11,7 @@
 /* Memoria técnica de una sola columna; el plano es la pieza central y los colores son los de las redes (azul suministro, sepia negras, pizarra grises, verde tratamiento) */
 :root{
   --bg:#f5f7f6; --surface:#ffffff; --sheet:#ffffff; --ink:#18221e; --muted:#58665f; --line:#d9e0dc;
-  --supply:#1f6fb2; --black:#7a4a24; --grey:#6f7f8f; --treat:#2f7d4f; --warn:#9a5b12; --warn-bg:#fdf3e2;
+  --supply:#1f6fb2; --black:#7a4a24; --grey:#6f7f8f; --treat:#2f7d4f; --storm:#0f97a8; --warn:#9a5b12; --warn-bg:#fdf3e2;
   --accent:#1f6fb2;
   --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -20,13 +20,13 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#111715; --surface:#18201d; --sheet:#eef1ee; --ink:#e3eae6; --muted:#9aa8a1; --line:#2b3632;
-    --supply:#5aa6e8; --black:#c48a5a; --grey:#a3b1bf; --treat:#5cc28a; --warn:#e8a656; --warn-bg:#2a2216;
+    --supply:#5aa6e8; --black:#c48a5a; --grey:#a3b1bf; --treat:#5cc28a; --storm:#4fc9d6; --warn:#e8a656; --warn-bg:#2a2216;
     --accent:#5aa6e8; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#111715; --surface:#18201d; --sheet:#eef1ee; --ink:#e3eae6; --muted:#9aa8a1; --line:#2b3632;
-  --supply:#5aa6e8; --black:#c48a5a; --grey:#a3b1bf; --treat:#5cc28a; --warn:#e8a656; --warn-bg:#2a2216;
+  --supply:#5aa6e8; --black:#c48a5a; --grey:#a3b1bf; --treat:#5cc28a; --storm:#4fc9d6; --warn:#e8a656; --warn-bg:#2a2216;
   --accent:#5aa6e8; color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -88,7 +88,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   <header>
     <div class="eyebrow">Diseño previo · Anteproyecto conceptual</div>
     <h1>Sistema de aguas del Condominio Pontezuela</h1>
-    <p class="prose" style="font-size:18px;color:var(--muted)">Suministro de agua potable, recolección separada de aguas negras y grises, tratamiento en el predio y aprovechamiento de lluvia para 19 casas nuevas y 2 existentes.</p>
+    <p class="prose" style="font-size:18px;color:var(--muted)">Suministro de agua potable, recolección separada de aguas negras y grises, tratamiento en el predio, manejo de aguas lluvias y aprovechamiento de lluvia para 19 casas nuevas y 2 existentes.</p>
     <div class="meta">Oriente antioqueño (jurisdicción de CORNARE) · 6,0805° N, 75,4227° O · MAGNA-SIRGAS origen Bogotá · Versión 1 · 21 de octubre de 2026</div>
     <div class="note"><b>Alcance.</b> Es un predimensionamiento con la información disponible (plano urbanístico, modelo de elevación satelital y cotas del plano). Sirve para tomar decisiones y pedir cotizaciones, pero no reemplaza los diseños hidrosanitarios firmados por un ingeniero ni los permisos de CORNARE.</div>
   </header>
@@ -107,7 +107,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   <section aria-labelledby="s-plano">
     <h2 id="s-plano">Esquema sobre el plano</h2>
-    <p class="prose">El terreno baja de occidente a oriente. Las redes de aguas residuales llegan por gravedad a la planta de tratamiento, en la zona verde entre la Casa existente 2 y la plaza, que es la parte más baja disponible fuera de la cesión ambiental. El agua potable entra por la portería, donde están la cisterna y el bombeo.</p>
+    <p class="prose">El terreno baja de occidente a oriente. Las redes de aguas residuales llegan por gravedad a la planta de tratamiento, en la zona verde entre la Casa existente 2 y la plaza, que es la parte más baja disponible fuera de la cesión ambiental. El agua potable entra por la portería, donde están la cisterna y el bombeo. Las aguas lluvias corren por las cunetas hasta un colector que las lleva, por aparte, al drenaje natural del costado oriental.</p>
     <figure class="sheet" style="margin:0">
       <div class="wrap"><div class="inner">
         <img src="../plano.png" alt="Plano urbanístico del Condominio Pontezuela" width="1197" height="752">
@@ -117,10 +117,11 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
         <label><input type="checkbox" id="lySupply" checked> <span class="sw" style="background:var(--supply)"></span> Agua potable</label>
         <label><input type="checkbox" id="lyBlack" checked> <span class="sw" style="background:var(--black)"></span> Aguas negras</label>
         <label><input type="checkbox" id="lyGrey" checked> <span class="sw" style="background:var(--grey)"></span> Aguas grises</label>
+        <label><input type="checkbox" id="lyStorm" checked> <span class="sw" style="background:var(--storm)"></span> Aguas lluvias</label>
         <label><input type="checkbox" id="lyTreat" checked> <span class="sw" style="background:var(--treat)"></span> Tratamiento</label>
         <label><input type="checkbox" id="lyCotas" checked> <span class="sw" style="background:var(--warn)"></span> Cotas y pendiente</label>
       </div>
-      <figcaption><a href="https://lj2755.github.io/toposat/simulacion.html#aguas">Ver las redes y la planta en la simulación 3D</a>. Trazado esquemático por las vías internas. Las flechas indican el sentido del flujo. Las redes de aguas residuales van por el centro de la vía; el agua potable, por el andén. Posiciones y tamaños aproximados.</figcaption>
+      <figcaption><a href="https://lj2755.github.io/toposat/simulacion.html#aguas">Ver las redes y la planta en la simulación 3D</a>. Trazado esquemático por las vías internas. Las flechas indican el sentido del flujo. Las redes de aguas residuales van por el centro de la vía; el agua potable, por el andén; las cunetas de aguas lluvias, por los bordes de la vía. Posiciones y tamaños aproximados.</figcaption>
     </figure>
   </section>
 
@@ -239,8 +240,21 @@ flowchart LR
   </section>
 
   <section aria-labelledby="s-lluvias">
-    <h2 id="s-lluvias">3. Aguas lluvias de vías y zonas duras</h2>
-    <p class="prose">Van por las cunetas que ya aparecen en el plano (cuneta–andén), en una red separada de las aguas residuales. Se descargan a la ronda hídrica a través de un desarenador y una estructura de disipación de energía. Conviene usar adoquín ecológico o zonas permeables en los parqueaderos para reducir el caudal.</p>
+    <h2 id="s-lluvias">3. Aguas lluvias</h2>
+    <p class="prose">Es una red independiente: nunca se mezcla con las aguas negras ni con las grises, para no sobrecargar la planta de tratamiento cuando llueve. El agua de los techos va primero a los tanques de 2 m³ de cada casa, y su rebose, junto con la escorrentía de vías y andenes, corre por las cunetas que ya aparecen en el plano (cuneta–andén). En el cruce de las vías, sumideros la llevan a un colector enterrado que sale hacia el oriente, la parte más baja del lote.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Elemento</th><th>Predimensionamiento</th><th>Comentario</th></tr></thead>
+      <tbody>
+        <tr><td>Caudal de diseño</td><td class="n">≈ 170 L/s</td><td>Método racional para todo el lote (1,05 ha): C ≈ 0,49 (0,34 ha duras y 0,71 ha verdes), aguacero de 10 años de retorno con intensidad de ≈ 120 mm/h, a confirmar con las curvas IDF de la estación IDEAM más cercana.</td></tr>
+        <tr><td>Cunetas</td><td class="n">≈ 360 m</td><td>A ambos lados de las tres vías internas (≈ 180 m de vía), con pendiente longitudinal mínima de 0,5 %.</td></tr>
+        <tr><td>Sumideros</td><td class="n">cada ≈ 40 m</td><td>Y en los cruces de vías, con rejilla y caja de 0,6 × 0,6 m.</td></tr>
+        <tr><td>Ramales</td><td class="n">PVC 10″–12″</td><td>Capacidad de 86 a 140 L/s al 1 %.</td></tr>
+        <tr><td>Colector de salida</td><td class="n">PVC 14″–16″</td><td>Capacidad de 210 a 300 L/s al 1 %; corre por el borde sur de la zona de tratamiento.</td></tr>
+        <tr><td>Desarenador</td><td class="n">≈ 2 × 1 × 1 m</td><td>Retiene arena y basuras antes de la descarga; limpieza después de cada temporada de lluvias.</td></tr>
+        <tr><td>Descarga</td><td class="n">disipador</td><td>Enrocado o gaviones para no erosionar el cauce. El punto exacto, hacia el drenaje natural del oriente o la ronda hídrica, se define con el levantamiento topográfico y con CORNARE.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose" style="margin-top:12px">Para bajar el caudal conviene usar adoquín ecológico en los parqueaderos, dejar la plaza y las zonas verdes permeables y, si el suelo lo permite, añadir zanjas de infiltración junto a las cunetas.</p>
   </section>
 
   <section aria-labelledby="s-norma">
@@ -284,7 +298,8 @@ flowchart LR
       FAFA (NBR 13969): V = 1,6·N·C·T = 1,6 × 105 × 30,6 × 0,92 ≈ 4,7 m³<br>
       Sedimentador de grises = 7,5 × 0,5 día ≈ 3,7 m³<br>
       Humedal: A = Q·ln(C₀/Cₑ)/k = 7,5 × ln(150/30) / 0,10 ≈ 121 m² (DBO₅ de 150 a 30 mg/L)<br>
-      Lluvia = 1 425 m² × 2,0 m × 0,85 = 2 422 m³/año ≈ 6,6 m³/día · Sanitarios = 25 % × 120 × 105 ≈ 3,1 m³/día
+      Lluvia = 1 425 m² × 2,0 m × 0,85 = 2 422 m³/año ≈ 6,6 m³/día · Sanitarios = 25 % × 120 × 105 ≈ 3,1 m³/día<br>
+      Aguas lluvias (método racional): Q = C·i·A / 360 = 0,49 × 120 × 1,05 / 360 ≈ 0,17 m³/s · PVC 14″ al 1 % (n = 0,009) ≈ 0,21 m³/s a tubo lleno
     </div>
   </details>
 
@@ -298,7 +313,7 @@ flowchart LR
 const NS = 'http://www.w3.org/2000/svg', svg = document.getElementById('svg');
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const groups = {};
-['cotas','treat','grey','black','supply'].forEach(k => { const g = document.createElementNS(NS,'g'); g.id = 'g-' + k; svg.appendChild(g); groups[k] = g; });
+['cotas','storm','treat','grey','black','supply'].forEach(k => { const g = document.createElementNS(NS,'g'); g.id = 'g-' + k; svg.appendChild(g); groups[k] = g; });
 const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
 
 function pipe(pts, layer, color, w, opts = {}){
@@ -340,8 +355,8 @@ function draw(){
   const c = groups.cotas;
   text(130, 300, '≈ 2 134,5 m', c, {fill:WARN, size:14, weight:700});
   text(130, 316, 'occidente (alto)', c, {fill:WARN, size:12, weight:600});
-  text(1140, 660, '≈ 2 132,5 m', c, {fill:WARN, size:14, weight:700, anchor:'end'});
-  text(1140, 676, 'oriente (bajo)', c, {fill:WARN, size:12, weight:600, anchor:'end'});
+  text(900, 700, '≈ 2 132,5 m', c, {fill:WARN, size:14, weight:700, anchor:'end'});
+  text(900, 716, 'oriente (bajo)', c, {fill:WARN, size:12, weight:600, anchor:'end'});
   // Norte
   el('path', {d:'M1160,40 l-10,28 l10,-7 l10,7 Z', fill:'#18221e'}, c); text(1160, 35, 'N', c, {size:14, weight:700});
 
@@ -372,9 +387,24 @@ function draw(){
   pipe([[951,481],[960,481]], 'treat', GRY, 3, {arrows:false});
   pipe([[1000,518],[1086,516]], 'treat', BLK, 3);
   pipe([[1105,468],[1112,468],[1112,506]], 'treat', TRT, 3);
-  pipe([[1097,526],[1097,560],[1160,560]], 'treat', TRT, 3, {dash:'7 5'});
-  callout(1160, 560, 1159, 590, ['Efluente', 'tratado'], t, TRT);
-  callout(940, 550, 950, 585, ['Planta de tratamiento', 'TS tanque séptico ≈ 15 m³', 'F filtro FAFA ≈ 5 m³', 'S sedimentador de grises ≈ 4 m³'], t, TRT);
+  pipe([[1108,516],[1160,516]], 'treat', TRT, 3, {dash:'7 5'});
+  callout(940, 550, 950, 585, ['Planta de tratamiento', 'TS tanque séptico ≈ 15 m³', 'F filtro FAFA ≈ 5 m³', 'S sedimentador de grises ≈ 4 m³', 'D desarenador de aguas lluvias'], t, TRT);
+
+  // ---- Aguas lluvias: cunetas a los bordes de la vía, colector y desarenador
+  const STM = '#0f97a8', st = groups.storm;
+  const cunetas = [
+    [[362,155],[362,436]], [[414,155],[414,436]],                  // vía occidental
+    [[170,436],[362,436]], [[414,436],[690,436]], [[690,436],[700,532]],
+    [[170,488],[680,488]], [[680,488],[694,532]],                  // vía central
+    [[690,155],[690,436]], [[742,155],[742,440]], [[742,440],[716,532]],   // vía oriental
+    [[655,745],[660,700],[690,545]], [[707,745],[710,700],[712,545]],      // tramo de la entrada
+  ];
+  cunetas.forEach(c => pipe(c, 'storm', STM, 2, {dash:'4 3'}));
+  pipe([[702,540],[1080,548]], 'storm', STM, 4.5);
+  box(1080, 540, 26, 16, 'storm', STM, 'D', {fo:.95});
+  pipe([[1106,548],[1160,548]], 'storm', STM, 3.5, {dash:'7 5'});
+  el('circle', {cx:702, cy:540, r:6, fill:STM, stroke:'#fff', 'stroke-width':1.5}, st);
+  text(764, 532, 'aguas lluvias', st, {anchor:'start', size:11, fill:STM});
 
   // ---- Agua potable (andén, +12 px)
   const S = supply;
@@ -391,7 +421,7 @@ function draw(){
 
   applyLayers();
 }
-const LAYERS = {lySupply:'supply', lyBlack:'black', lyGrey:'grey', lyTreat:'treat', lyCotas:'cotas'};
+const LAYERS = {lySupply:'supply', lyBlack:'black', lyGrey:'grey', lyStorm:'storm', lyTreat:'treat', lyCotas:'cotas'};
 function applyLayers(){ for (const id in LAYERS) groups[LAYERS[id]].style.display = document.getElementById(id).checked ? '' : 'none'; }
 for (const id in LAYERS) document.getElementById(id).addEventListener('change', applyLayers);
 draw();

@@ -68,6 +68,7 @@ button.on{background:var(--accent-2);border-color:var(--accent)}
   <label><input type="checkbox" id="lSup" checked> <span class="sw" style="background:#1f6fb2"></span> Agua potable</label>
   <label><input type="checkbox" id="lNeg" checked> <span class="sw" style="background:#7a4a24"></span> Aguas negras</label>
   <label><input type="checkbox" id="lGri" checked> <span class="sw" style="background:#6f7f8f"></span> Aguas grises</label>
+  <label><input type="checkbox" id="lLlu" checked> <span class="sw" style="background:#0f97a8"></span> Aguas lluvias</label>
   <label><input type="checkbox" id="lPlanta" checked> <span class="sw" style="background:#2f7d4f"></span> Planta, cisterna y tanques de lluvia</label>
   <div class="note">Las tuberías van enterradas; aquí se dibujan sobre el terreno, más gruesas, para poder verlas. Las flechas indican el sentido del flujo.</div>
   <div class="row" style="margin-top:6px"><span style="width:92px">Plano CAD</span><input type="range" id="planOp" min="0" max="1" step="0.05" value="0"></div>
@@ -223,7 +224,7 @@ scene.add(sun, sun.target);
 
 const world = new THREE.Group(); scene.add(world);
 const groups = {casas:new THREE.Group(), exist:new THREE.Group(), arb:new THREE.Group(),
-  sup:new THREE.Group(), neg:new THREE.Group(), gri:new THREE.Group(), planta:new THREE.Group()};
+  sup:new THREE.Group(), neg:new THREE.Group(), gri:new THREE.Group(), llu:new THREE.Group(), planta:new THREE.Group()};
 Object.values(groups).forEach(g => world.add(g));
 
 let heights, NGRID, STEP, baseElev, terrainMesh, sat, texCanvas, texCtx, texture, planImg;
@@ -419,11 +420,18 @@ const NETS = {
         [[683,745],[686,700],[703,515]], [[703,465],[703,512]], [[703,512],[915,512],[915,481],[925,481]], [[951,481],[960,481]]]},
   neg: {color:0x7a4a24, lines:[[[385,152],[385,459]], [[168,459],[697,459]], [[713,152],[713,447],[697,459]],
         [[677,745],[680,700],[697,520]], [[697,459],[697,520]], [[697,520],[925,520]], [[1000,518],[1086,516]]]},
+  // Aguas lluvias: cunetas a los bordes de las vías (delgadas) y colector hacia el desarenador (grueso)
+  cun: {group:'llu', color:0x0f97a8, r:.12, lines:[[[362,155],[362,436]], [[414,155],[414,436]], [[170,436],[362,436]], [[414,436],[690,436]],
+        [[690,436],[700,532]], [[170,488],[680,488]], [[680,488],[694,532]], [[690,155],[690,436]], [[742,155],[742,440]], [[742,440],[716,532]],
+        [[655,745],[660,700],[690,545]], [[707,745],[710,700],[712,545]]]},
+  llu: {color:0x0f97a8, r:.32, lines:[[[702,540],[1080,548]]]},
 };
 const WATER_INFO = {
   sup: {name:'Red de agua potable', desc:'PVC 2½″ por los andenes · 16,8 m³/día · presión con bombeo desde la cisterna'},
   neg: {name:'Red de aguas negras', desc:'PVC sanitaria 6″, pendiente ≥ 1 % · 3,2 m³/día hacia el tanque séptico'},
   gri: {name:'Red de aguas grises', desc:'PVC sanitaria 6″, paralela a la de negras · 7,5 m³/día hacia el humedal'},
+  cun: {name:'Cuneta de aguas lluvias', desc:'A ambos lados de la vía · recoge la escorrentía y el rebose de los tanques de lluvia'},
+  llu: {name:'Colector de aguas lluvias', desc:'PVC 14″–16″ al 1 % · caudal de diseño ≈ 170 L/s (aguacero de 10 años) · red separada de las aguas residuales'},
 };
 function labelSprite(text, color){
   const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), fs = 44;
@@ -440,7 +448,7 @@ function labelSprite(text, color){
 function buildWater(){
   // Tuberías y flechas
   for (const [key, net] of Object.entries(NETS)){
-    const mat = new THREE.MeshLambertMaterial({color:net.color}), g = groups[key];
+    const mat = new THREE.MeshLambertMaterial({color:net.color}), g = groups[net.group || key], rad = net.r || .22;
     for (const line of net.lines){
       const pts = [];
       for (let i = 1; i < line.length; i++){
@@ -449,12 +457,12 @@ function buildWater(){
       }
       if (pts.length < 2) continue;
       const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0);
-      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length*2, .22, 8, false), mat);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length*2, rad, 8, false), mat);
       tube.userData = {water: WATER_INFO[key], center:[pts[0].x, pts[0].z]}; g.add(tube);
       const len = curve.getLength();
       for (let d = 6; d < len - 2; d += 14){            // flechas de sentido de flujo
         const t = d/len, p = curve.getPointAt(t), tg = curve.getTangentAt(t);
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(.55, 1.4, 10), mat);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(rad*2.5, rad*6.4, 10), mat);
         cone.position.copy(p).add(new THREE.Vector3(0, .15, 0));
         cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tg.normalize());
         cone.userData = tube.userData; g.add(cone);
@@ -464,11 +472,11 @@ function buildWater(){
   // Planta de tratamiento, cisterna y tanques de lluvia
   const P = groups.planta;
   const concrete = new THREE.MeshLambertMaterial({color:0xb9b6ad}), lid = new THREE.MeshLambertMaterial({color:0x7d8a84});
-  const tank = (px, h, name, desc, lidMat = lid) => {
+  const tank = (px, h, name, desc, lidMat = lid, grp = P) => {
     const c = px.map(px2local), y0 = Math.min(...c.map(([x,z]) => heightAt(x,z)));
     const body = prism(c, y0 - .3, y0 + h, concrete), top = prism(c, y0 + h, y0 + h + .12, lidMat);
     const info = {water:{name, desc}, center:c.reduce((s,p)=>[s[0]+p[0]/4, s[1]+p[1]/4],[0,0])};
-    body.userData = top.userData = info; P.add(body, top); return {c, y0};
+    body.userData = top.userData = info; grp.add(body, top); return {c, y0};
   };
   tank(rect(925,506,971,530), .6, 'Tanque séptico (aguas negras)', '≈ 15 m³ en dos cámaras, enterrado · limpieza de lodos cada 2 años', new THREE.MeshLambertMaterial({color:0x7a4a24}));
   tank(rect(976,506,1000,530), .6, 'Filtro anaerobio FAFA', '≈ 5 m³ con lecho de grava · recibe el efluente del tanque séptico', new THREE.MeshLambertMaterial({color:0x8d5d36}));
@@ -487,9 +495,23 @@ function buildWater(){
     pl.position.set(x + (r-.5)*.5, hy + hgt/2, z + (r-.5)*.5); pl.castShadow = true; pl.userData = hInfo; P.add(pl);
   }
   // Salida del efluente tratado
-  { const pts = [[1097,526],[1097,560],[1150,560]].map(px2local).map(([x,z]) => new THREE.Vector3(x, heightAt(x,z) + .25, z));
+  { const pts = [[1108,516],[1155,516]].map(px2local).map(([x,z]) => new THREE.Vector3(x, heightAt(x,z) + .25, z));
     const out = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0), 20, .18, 8, false), new THREE.MeshLambertMaterial({color:0x2f7d4f}));
     out.userData = {water:{name:'Efluente tratado', desc:'Hacia reúso en riego, infiltración o vertimiento, según el permiso de CORNARE'}, center:[pts[0].x, pts[0].z]}; P.add(out); }
+  // Desarenador y descarga de aguas lluvias con disipador de energía
+  { const L = groups.llu;
+    tank(rect(1080,540,1106,556), .45, 'Desarenador de aguas lluvias', '≈ 2 × 1 × 1 m · retiene arena y basuras antes de la descarga', new THREE.MeshLambertMaterial({color:0x0f97a8}), L);
+    const pts = [[1106,548],[1158,548]].map(px2local).map(([x,z]) => new THREE.Vector3(x, heightAt(x,z) + .3, z));
+    const out = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0), 20, .28, 8, false), new THREE.MeshLambertMaterial({color:0x0f97a8}));
+    out.userData = {water:{name:'Descarga de aguas lluvias', desc:'Hacia el drenaje natural del oriente; punto exacto a definir con el levantamiento y CORNARE'}, center:[pts[0].x, pts[0].z]};
+    L.add(out);
+    const rock = new THREE.MeshLambertMaterial({color:0x8c8a84}), [rx, rz] = px2local([1160,548]);
+    for (let i = 0; i < 9; i++){
+      const st = new THREE.Mesh(new THREE.DodecahedronGeometry(.35 + (i%3)*.12), rock), a = i*2.4, r = .4 + (i%4)*.35;
+      st.position.set(rx + Math.cos(a)*r, heightAt(rx, rz) + .25, rz + Math.sin(a)*r); st.castShadow = true;
+      st.userData = {water:{name:'Disipador de energía', desc:'Enrocado que evita la erosión en el punto de descarga'}, center:[rx, rz]}; L.add(st);
+    }
+  }
   // Cisterna enterrada y caseta de bombas junto a la portería
   tank(rect(758,664,786,698), .25, 'Cisterna de agua potable', '25 m³ enterrada, dos compartimentos · ≈ 1 día de consumo máximo', new THREE.MeshLambertMaterial({color:0x1f6fb2}));
   { const c = rect(788,666,812,690).map(px2local), y0 = Math.min(...c.map(([x,z]) => heightAt(x,z)));
@@ -569,7 +591,7 @@ canvas.addEventListener('pointerup', e => {
   if (!downAt || Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]) > 4) return;
   mouse.set(e.clientX/innerWidth*2 - 1, -e.clientY/innerHeight*2 + 1);
   ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects([groups.casas, groups.exist, groups.planta, groups.sup, groups.neg, groups.gri].filter(g => g.visible), true)
+  const hit = ray.intersectObjects([groups.casas, groups.exist, groups.planta, groups.sup, groups.neg, groups.gri, groups.llu].filter(g => g.visible), true)
     .find(h => h.object.userData && (h.object.userData.house || h.object.userData.water));
   const info = $('info');
   if (!hit){ info.style.display = 'none'; return; }
@@ -593,6 +615,7 @@ $('lSup').onchange = e => groups.sup.visible = e.target.checked;
 $('lNeg').onchange = e => groups.neg.visible = e.target.checked;
 $('lGri').onchange = e => groups.gri.visible = e.target.checked;
 $('lPlanta').onchange = e => groups.planta.visible = e.target.checked;
+$('lLlu').onchange = e => groups.llu.visible = e.target.checked;
 $('lCasas').onchange = e => groups.casas.visible = e.target.checked;
 $('lExist').onchange = e => groups.exist.visible = e.target.checked;
 $('lArb').onchange = e => groups.arb.visible = e.target.checked;

@@ -10,7 +10,7 @@ Levantamiento topográfico en el navegador con modelos de elevación satelital (
 
 [![Planta de tratamiento de agua en la simulación 3D: humedal sembrado para aguas grises, tanque séptico y filtro para aguas negras, caja de salida, cisterna con caseta de bombas y redes de tuberías por las vías](img/simulacion-planta-agua.jpg)](https://lj2755.github.io/toposat/simulacion.html#aguas)
 
-*Simulación 3D del Condominio Pontezuela: casas, vías, árboles y lindero sobre el terreno y la imagen satelital reales. De arriba abajo: vista aérea; vista en planta con el lindero (amarillo) y la cesión de protección ambiental (verde); vista peatonal desde la portería subiendo por la vía interna hacia el kiosko comunal; y la planta de tratamiento de agua (diseño previo), con el humedal para aguas grises, el tanque séptico y el filtro para aguas negras, la cisterna con su caseta de bombas y las redes de agua potable (azul), negras (café) y grises (gris). [Abrir la simulación](https://lj2755.github.io/toposat/simulacion.html) · [Abrir TopoSat](https://lj2755.github.io/toposat/)*
+*Simulación 3D del Condominio Pontezuela: casas, vías, árboles y lindero sobre el terreno y la imagen satelital reales. De arriba abajo: vista aérea; vista en planta con el lindero (amarillo) y la cesión de protección ambiental (verde); vista peatonal desde la portería subiendo por la vía interna hacia el kiosko comunal; y la planta de tratamiento de agua (diseño previo), con el humedal para aguas grises, el tanque séptico y el filtro para aguas negras, la cisterna con su caseta de bombas las redes de agua potable (azul), negras (café) y grises (gris), y la red de aguas lluvias (azul verdoso) con su desarenador y la descarga con disipador. [Abrir la simulación](https://lj2755.github.io/toposat/simulacion.html) · [Abrir TopoSat](https://lj2755.github.io/toposat/)*
 
 - **`index.html`**: TopoSat. Área por rectángulo o polígono, curvas de nivel, perfiles, puntos GNSS y exportación a DXF, GeoJSON y CSV (UTM WGS84).
 - **`simulacion.html`**: simulación 3D del Condominio Pontezuela sobre el terreno real (MAGNA-SIRGAS, origen Bogotá).
@@ -33,7 +33,7 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 [![Documento de diseño previo del sistema de aguas: resumen en cifras y esquema de redes de agua potable, aguas negras y grises con la planta de tratamiento sobre el plano](img/aguas-documento.jpg)](https://lj2755.github.io/toposat/aguas/)
 
-**[Sistema de aguas del Condominio Pontezuela](https://lj2755.github.io/toposat/aguas/)** (`aguas/index.html`): anteproyecto conceptual de agua potable, aguas negras y grises por separado, planta de tratamiento y aprovechamiento de lluvia, con el esquema de redes sobre el plano y la memoria de cálculo resumida.
+**[Sistema de aguas del Condominio Pontezuela](https://lj2755.github.io/toposat/aguas/)** (`aguas/index.html`): anteproyecto conceptual de agua potable, aguas negras y grises por separado, planta de tratamiento, red de aguas lluvias y aprovechamiento de lluvia, con el esquema de redes sobre el plano y la memoria de cálculo resumida.
 
 | | Diseño previo |
 |---|---|
@@ -42,6 +42,7 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 | Aguas negras | 3,2 m³/día · tanque séptico ≈ 15 m³ + filtro anaerobio FAFA ≈ 5 m³ |
 | Aguas grises | 7,5 m³/día · trampas de grasa, sedimentador ≈ 4 m³ y humedal ≈ 120 m² |
 | Agua lluvia | ≈ 6,6 m³/día aprovechables · tanque de 2 m³ por casa |
+| Aguas lluvias | ≈ 170 L/s de diseño · cunetas, colector PVC 14″–16″, desarenador y descarga con disipador al oriente |
 
 Es un predimensionamiento: no reemplaza el diseño hidrosanitario firmado por un ingeniero ni el permiso de vertimiento de CORNARE. Las redes y la planta también se ven en la [simulación 3D](https://lj2755.github.io/toposat/simulacion.html#aguas).
 
