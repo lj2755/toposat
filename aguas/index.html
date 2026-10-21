@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sistema de Aguas Pontezuela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Memoria técnica de una sola columna; el plano es la pieza central y los colores son los de las redes (azul suministro, sepia negras, pizarra grises, verde tratamiento) */
+:root{
+  --bg:#f5f7f6; --surface:#ffffff; --sheet:#ffffff; --ink:#18221e; --muted:#58665f; --line:#d9e0dc;
+  --supply:#1f6fb2; --black:#7a4a24; --grey:#6f7f8f; --treat:#2f7d4f; --warn:#9a5b12; --warn-bg:#fdf3e2;
+  --accent:#1f6fb2;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111715; --surface:#18201d; --sheet:#eef1ee; --ink:#e3eae6; --muted:#9aa8a1; --line:#2b3632;
+    --supply:#5aa6e8; --black:#c48a5a; --grey:#a3b1bf; --treat:#5cc28a; --warn:#e8a656; --warn-bg:#2a2216;
+    --accent:#5aa6e8; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111715; --surface:#18201d; --sheet:#eef1ee; --ink:#e3eae6; --muted:#9aa8a1; --line:#2b3632;
+  --supply:#5aa6e8; --black:#c48a5a; --grey:#a3b1bf; --treat:#5cc28a; --warn:#e8a656; --warn-bg:#2a2216;
+  --accent:#5aa6e8; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--f-body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:32px 56px}
+main{max-width:980px;margin:0 auto;display:grid;gap:40px}
+.prose{max-width:68ch}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(28px,4.6vw,42px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:600;margin-bottom:12px}
+h3{font-size:18px;font-weight:600;margin:18px 0 6px}
+p{margin:0 0 12px}
+.eyebrow{font:500 12px/1 var(--f-data);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+header{display:grid;gap:12px}
+.meta{font:13px/1.5 var(--f-data);color:var(--muted)}
+.note{border-left:4px solid var(--warn);background:var(--warn-bg);padding:12px 16px;border-radius:0 8px 8px 0;font-size:15px;max-width:68ch}
+.note b{color:var(--warn)}
+section{display:grid;gap:4px}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:2px;min-width:0}
+.fig .k{font:500 12px/1.3 var(--f-data);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.fig .v{font:600 26px/1.15 var(--f-display);font-variant-numeric:tabular-nums}
+.fig .s{font-size:13px;color:var(--muted)}
+.fig.supply .v{color:var(--supply)} .fig.black .v{color:var(--black)} .fig.grey .v{color:var(--grey)} .fig.treat .v{color:var(--treat)}
+.sheet{background:var(--sheet);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sheet .wrap{position:relative;overflow-x:auto}
+.sheet .inner{position:relative;min-width:640px}
+.sheet img{display:block;width:100%;height:auto;opacity:.55}
+.sheet svg{position:absolute;inset:0;width:100%;height:100%}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 18px;padding:12px 16px;border-top:1px solid var(--line);background:var(--surface);font-size:14px}
+.toolbar label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.sw{display:inline-block;width:22px;height:4px;border-radius:2px}
+.sw.dash{background:repeating-linear-gradient(90deg,currentColor 0 6px,transparent 6px 10px)!important}
+figcaption{padding:10px 16px 14px;font-size:13px;color:var(--muted);background:var(--surface)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font:600 12px/1.3 var(--f-data);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg)}
+td.n{font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+ul,ol{margin:0 0 12px;padding-left:22px} li{margin:4px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.card h3{margin-top:0}
+.tag{display:inline-block;font:500 11px/1 var(--f-data);text-transform:uppercase;letter-spacing:.06em;padding:4px 7px;border-radius:4px;color:var(--surface)}
+.tag.rec{background:var(--treat)} .tag.alt{background:var(--muted)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+summary{cursor:pointer;font-weight:600}
+code,.mono{font-family:var(--f-data);font-size:.92em}
+pre.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto;margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+</style>
+
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Diseño previo · Anteproyecto conceptual</div>
+    <h1>Sistema de aguas del Condominio Pontezuela</h1>
+    <p class="prose" style="font-size:18px;color:var(--muted)">Suministro de agua potable, recolección separada de aguas negras y grises, tratamiento en el predio y aprovechamiento de lluvia para 19 casas nuevas y 2 existentes.</p>
+    <div class="meta">Oriente antioqueño (jurisdicción de CORNARE) · 6,0805° N, 75,4227° O · MAGNA-SIRGAS origen Bogotá · Versión 1 · 21 de octubre de 2026</div>
+    <div class="note"><b>Alcance.</b> Es un predimensionamiento con la información disponible (plano urbanístico, modelo de elevación satelital y cotas del plano). Sirve para tomar decisiones y pedir cotizaciones, pero no reemplaza los diseños hidrosanitarios firmados por un ingeniero ni los permisos de CORNARE.</div>
+  </header>
+
+  <section aria-labelledby="s-resumen">
+    <h2 id="s-resumen">Resumen en cifras</h2>
+    <div class="figs">
+      <div class="fig"><span class="k">Población de diseño</span><span class="v">105 hab</span><span class="s">21 viviendas × 5 personas</span></div>
+      <div class="fig supply"><span class="k">Agua potable</span><span class="v">16,8 m³/día</span><span class="s">21,8 m³ el día de mayor consumo</span></div>
+      <div class="fig supply"><span class="k">Cisterna</span><span class="v">25 m³</span><span class="s">≈ 1 día de reserva + bombeo</span></div>
+      <div class="fig black"><span class="k">Aguas negras</span><span class="v">3,2 m³/día</span><span class="s">Sanitarios → tanque séptico + FAFA</span></div>
+      <div class="fig grey"><span class="k">Aguas grises</span><span class="v">7,5 m³/día</span><span class="s">Duchas, lavamanos, cocina, ropas → humedal</span></div>
+      <div class="fig treat"><span class="k">Lluvia aprovechable</span><span class="v">6,6 m³/día</span><span class="s">Promedio anual de techos; cubre sanitarios (3,1 m³/día)</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-plano">
+    <h2 id="s-plano">Esquema sobre el plano</h2>
+    <p class="prose">El terreno baja de occidente a oriente. Las redes de aguas residuales llegan por gravedad a la planta de tratamiento, en la zona verde entre la Casa existente 2 y la plaza, que es la parte más baja disponible fuera de la cesión ambiental. El agua potable entra por la portería, donde están la cisterna y el bombeo.</p>
+    <figure class="sheet" style="margin:0">
+      <div class="wrap"><div class="inner">
+        <img src="../plano.png" alt="Plano urbanístico del Condominio Pontezuela" width="1197" height="752">
+        <svg id="svg" viewBox="0 0 1197 752" role="img" aria-label="Esquema de redes de agua potable, aguas negras, aguas grises y planta de tratamiento sobre el plano"></svg>
+      </div></div>
+      <div class="toolbar" role="group" aria-label="Capas del esquema">
+        <label><input type="checkbox" id="lySupply" checked> <span class="sw" style="background:var(--supply)"></span> Agua potable</label>
+        <label><input type="checkbox" id="lyBlack" checked> <span class="sw" style="background:var(--black)"></span> Aguas negras</label>
+        <label><input type="checkbox" id="lyGrey" checked> <span class="sw" style="background:var(--grey)"></span> Aguas grises</label>
+        <label><input type="checkbox" id="lyTreat" checked> <span class="sw" style="background:var(--treat)"></span> Tratamiento</label>
+        <label><input type="checkbox" id="lyCotas" checked> <span class="sw" style="background:var(--warn)"></span> Cotas y pendiente</label>
+      </div>
+      <figcaption><a href="https://lj2755.github.io/toposat/simulacion.html#aguas">Ver las redes y la planta en la simulación 3D</a>. Trazado esquemático por las vías internas. Las flechas indican el sentido del flujo. Las redes de aguas residuales van por el centro de la vía; el agua potable, por el andén. Posiciones y tamaños aproximados.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="s-datos">
+    <h2 id="s-datos">Datos de partida y supuestos</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Dato</th><th>Valor</th><th>Fuente o criterio</th></tr></thead>
+      <tbody>
+        <tr><td>Viviendas</td><td class="n">19 + 2</td><td>Plano urbanístico: Casas 2 a 20 y Casas existentes 1 y 2. La portería y el kiosko se incluyen dentro del margen.</td></tr>
+        <tr><td>Personas por vivienda</td><td class="n">5</td><td>Valor conservador para casas de 128 a 195 m².</td></tr>
+        <tr><td>Altitud</td><td class="n">2 125–2 135 m</td><td>Clima frío (más de 2 000 m s.n.m.).</td></tr>
+        <tr><td>Dotación neta</td><td class="n">120 L/hab·día</td><td>Máximo para más de 2 000 m s.n.m., Resolución 0330 de 2017.</td></tr>
+        <tr><td>Pérdidas técnicas</td><td class="n">25 %</td><td>Máximo admitido; dotación bruta de 160 L/hab·día.</td></tr>
+        <tr><td>Retorno a aguas residuales</td><td class="n">0,85</td><td>Coeficiente de retorno usual.</td></tr>
+        <tr><td>Reparto negras / grises</td><td class="n">30 % / 70 %</td><td>Sanitarios frente a duchas, lavamanos, cocina y lavadero.</td></tr>
+        <tr><td>Pendiente del terreno</td><td class="n">≈ 1,5 % al oriente</td><td>Cotas de árboles del plano: ≈ 2 134,5 m al occidente y ≈ 2 132,5 m al oriente. El modelo satelital (30 m) marca la misma dirección con más desnivel, pero es poco preciso a esta escala.</td></tr>
+        <tr><td>Lluvia anual</td><td class="n">≈ 2 000 mm</td><td>Valor típico del Valle de San Nicolás; a confirmar con la estación IDEAM más cercana.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-agua">
+    <h2 id="s-agua">1. Suministro de agua potable</h2>
+    <div class="prose">
+      <h3>Fuente</h3>
+      <p>Conexión al acueducto que preste servicio en la vereda (empresa de servicios públicos o acueducto veredal), con un solo medidor general a la entrada. Hay que solicitar el certificado de disponibilidad del servicio antes de avanzar. Si no hay red, la alternativa es una concesión de aguas de CORNARE (pozo o fuente superficial) con potabilización, lo que cambia bastante el costo.</p>
+      <h3>Por qué cisterna y bombeo</h3>
+      <p>El lote es casi plano. Un tanque en la parte alta (≈ 2 135 m) daría muy poca presión en los segundos pisos, y para lograr 15 m de presión haría falta una torre de unos 20 m. Por eso se propone una <b>cisterna enterrada junto a la portería</b>, que además recibe el agua por la vía de acceso, con un <b>equipo de presión constante</b>.</p>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>Elemento</th><th>Predimensionamiento</th><th>Comentario</th></tr></thead>
+      <tbody>
+        <tr><td>Caudal medio diario</td><td class="n">0,19 L/s</td><td>105 hab × 160 L/hab·día</td></tr>
+        <tr><td>Caudal máximo diario</td><td class="n">0,25 L/s</td><td>k₁ = 1,3</td></tr>
+        <tr><td>Caudal máximo horario</td><td class="n">0,40 L/s</td><td>k₂ = 1,6. Para la red interna manda la simultaneidad por unidades de consumo (NTC 1500): pico estimado de 2 a 3 L/s.</td></tr>
+        <tr><td>Cisterna</td><td class="n">25 m³</td><td>Un día del consumo máximo (21,8 m³) con margen, por posibles cortes del servicio. Dos compartimentos para poder lavarla sin suspender el suministro.</td></tr>
+        <tr><td>Bombas</td><td class="n">2 × 2 HP</td><td>Una trabaja y la otra queda de reserva, con variador de velocidad y tanque hidroacumulador. Caudal de 3 L/s y altura de unos 33 m: casa más alta (2 135 m), 5 m al segundo piso, 15 m de presión de servicio y 5 m de pérdidas.</td></tr>
+        <tr><td>Red principal</td><td class="n">PVC 2½″</td><td>Por los andenes de las tres vías internas, con válvulas de corte por tramo y purga en los extremos.</td></tr>
+        <tr><td>Acometidas</td><td class="n">½″–¾″</td><td>Una por casa, con registro y medidor individual para repartir el consumo.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="prose" style="margin-top:12px">
+      <h3>Agua lluvia para sanitarios y riego</h3>
+      <p>Los techos de las 19 casas (≈ 1 425 m²) recogen en promedio unos 6,6 m³ por día, más que lo que gastan los sanitarios (3,1 m³/día). Un tanque de 2 m³ por casa, con su propia red hacia sanitarios y llave de jardín, reduciría la compra de agua en cerca de un 20 %. En los meses secos (diciembre a febrero y junio a agosto) el tanque se completa con agua del acueducto mediante una válvula de flotador, sin conexión directa entre las dos redes.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-residuales">
+    <h2 id="s-residuales">2. Aguas residuales: negras y grises por separado</h2>
+    <p class="prose">Cada casa sale con dos tuberías: una de los sanitarios (aguas negras) y otra del resto (aguas grises). Las grises son el 70 % del caudal y se tratan con un sistema más sencillo y natural; las negras, que concentran la carga orgánica y los patógenos, van a un tratamiento anaerobio cerrado.</p>
+    <pre class="mermaid">
+flowchart LR
+  subgraph Casa
+    S[Sanitarios]
+    D[Duchas · lavamanos · lavadero]
+    C[Cocina]
+  end
+  C --> TG[Trampa de grasas por casa]
+  S -- aguas negras --> TS[Tanque séptico ≈ 15 m³]
+  TS --> FAFA[Filtro anaerobio FAFA ≈ 5 m³]
+  D -- aguas grises --> SED[Sedimentador ≈ 4 m³]
+  TG --> SED
+  SED --> HUM[Humedal subsuperficial ≈ 120 m²]
+  FAFA --> CS[Caja de salida y muestreo]
+  HUM --> CS
+  CS --> R[Reúso en riego]
+  CS --> V[Infiltración o vertimiento con permiso]
+    </pre>
+
+    <div class="cols" style="margin-top:16px">
+      <div class="card">
+        <h3 style="color:var(--black)">Aguas negras</h3>
+        <ul>
+          <li><b>Caudal:</b> 3,2 m³/día.</li>
+          <li><b>Red:</b> PVC sanitaria de 6″ por el centro de las vías, pendiente mínima de 1 %, cámaras de inspección en cada cambio de dirección y como máximo cada 80 m. Acometidas de 4″.</li>
+          <li><b>Tanque séptico:</b> ≈ 15 m³ en dos cámaras, por ejemplo de 5,0 × 2,5 m con 1,6 m de profundidad útil. Limpieza de lodos cada dos años.</li>
+          <li><b>Filtro anaerobio de flujo ascendente (FAFA):</b> ≈ 5 m³ con lecho de grava o material plástico.</li>
+          <li>Tanques prefabricados en polietileno o concreto, enterrados, con ventilación y tapas de inspección.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--grey)">Aguas grises</h3>
+        <ul>
+          <li><b>Caudal:</b> 7,5 m³/día.</li>
+          <li><b>Trampa de grasas en cada cocina</b> (60 a 100 L), con limpieza mensual por parte del propietario.</li>
+          <li><b>Red:</b> PVC sanitaria de 6″ paralela a la de negras.</li>
+          <li><b>Sedimentador:</b> ≈ 4 m³ (medio día de retención) para retener sólidos y proteger el humedal.</li>
+          <li><b>Humedal de flujo subsuperficial horizontal:</b> ≈ 120 m², por ejemplo de 18 × 6,5 m con 0,6 m de grava, sembrado con plantas como heliconias, papiro o juncos. No hay agua expuesta, por lo que no genera olores ni mosquitos y funciona como zona verde.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="prose" style="margin-top:16px">
+      <h3>Destino del agua tratada</h3>
+      <p>Las dos líneas llegan a una misma caja de salida, donde se toman las muestras. A partir de ahí hay tres opciones, que pueden combinarse:</p>
+      <ol>
+        <li><b>Reúso en riego</b> de zonas verdes, preferiblemente con el efluente del humedal, siguiendo la Resolución 1256 de 2021.</li>
+        <li><b>Infiltración en el suelo</b> con un campo de infiltración, si la prueba de percolación lo permite (Resolución 0699 de 2021). Puede requerir varios cientos de metros cuadrados.</li>
+        <li><b>Vertimiento a la fuente hídrica</b> de la ronda al norte, cumpliendo los límites de la Resolución 0631 de 2015.</li>
+      </ol>
+      <p>Cualquiera de las tres requiere <b>permiso de vertimiento de CORNARE</b> (Decreto 1076 de 2015), que se tramita con este diseño, un estudio de suelos y una evaluación ambiental del vertimiento.</p>
+    </div>
+
+    <div class="cols" style="margin-top:8px">
+      <div class="card">
+        <span class="tag rec">Recomendada</span>
+        <h3>Separación negras / grises en el predio</h3>
+        <p>Es la opción descrita arriba. Permite reusar agua, el humedal es barato de operar y la carga que llega al tanque séptico es menor. El costo extra está en la doble tubería y las doble acometidas.</p>
+      </div>
+      <div class="card">
+        <span class="tag alt">Alternativa</span>
+        <h3>Red única y planta compacta</h3>
+        <p>Una sola red de 6″ hacia una planta prefabricada de lodos activados para unos 11 m³/día. Ocupa menos espacio, pero consume energía, requiere un operador y es más difícil reusar el agua. Si en el futuro llega alcantarillado público a la vereda, conviene conectarse.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-lluvias">
+    <h2 id="s-lluvias">3. Aguas lluvias de vías y zonas duras</h2>
+    <p class="prose">Van por las cunetas que ya aparecen en el plano (cuneta–andén), en una red separada de las aguas residuales. Se descargan a la ronda hídrica a través de un desarenador y una estructura de disipación de energía. Conviene usar adoquín ecológico o zonas permeables en los parqueaderos para reducir el caudal.</p>
+  </section>
+
+  <section aria-labelledby="s-norma">
+    <h2 id="s-norma">Normativa aplicable</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Norma</th><th>Tema</th></tr></thead>
+      <tbody>
+        <tr><td>Resolución 0330 de 2017 (Minvivienda)</td><td>Reglamento técnico del sector de agua y saneamiento (RAS): dotaciones, caudales y redes.</td></tr>
+        <tr><td>NTC 1500</td><td>Código colombiano de fontanería: instalaciones hidráulicas y sanitarias dentro de las casas.</td></tr>
+        <tr><td>Decreto 1076 de 2015</td><td>Permiso de vertimiento y concesión de aguas ante la autoridad ambiental (CORNARE).</td></tr>
+        <tr><td>Resolución 0631 de 2015</td><td>Límites de vertimiento a cuerpos de agua superficiales.</td></tr>
+        <tr><td>Resolución 0699 de 2021</td><td>Vertimientos de aguas residuales domésticas tratadas al suelo.</td></tr>
+        <tr><td>Resolución 1256 de 2021</td><td>Reúso de aguas residuales tratadas.</td></tr>
+        <tr><td>Resolución 2115 de 2007</td><td>Calidad del agua para consumo humano.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s-pasos">
+    <h2 id="s-pasos">Próximos pasos</h2>
+    <ol class="prose">
+      <li><b>Levantamiento topográfico de detalle</b> con curvas cada 0,5 m. Confirma la pendiente de cada vía, sobre todo la vía occidental, y la cota de la zona de tratamiento.</li>
+      <li><b>Certificado de disponibilidad</b> de acueducto y, si existe, de alcantarillado.</li>
+      <li><b>Estudio de suelos con prueba de percolación</b> en la zona de tratamiento y en las posibles áreas de infiltración.</li>
+      <li><b>Confirmar la ronda hídrica</b> y sus retiros con CORNARE, para ubicar el punto de vertimiento y mantener la planta fuera de la cesión.</li>
+      <li><b>Diseño hidrosanitario definitivo</b>, firmado por un ingeniero, con planos, perfiles de las redes y memoria de cálculo.</li>
+      <li><b>Trámite del permiso de vertimiento</b> y, si aplica, de la concesión de aguas.</li>
+    </ol>
+  </section>
+
+  <details>
+    <summary>Memoria de cálculo resumida</summary>
+    <div class="prose mono" style="font-size:13.5px;line-height:1.75;margin-top:10px">
+      Dotación bruta = 120 / (1 − 0,25) = 160 L/hab·día<br>
+      Qmd = 105 × 160 / 86 400 = 0,194 L/s · QMD = 1,3 × Qmd = 0,253 L/s · QMH = 1,6 × QMD = 0,404 L/s<br>
+      Volumen diario = 16,8 m³ · día máximo = 21,8 m³ → cisterna 25 m³<br>
+      Altura de bombeo ≈ (2 135 + 5 + 15 + 5) − 2 127,5 = 32,5 m · Potencia = 9,81 × 3 × 32,5 / 0,6 ≈ 1,6 kW (2,1 HP)<br>
+      Aguas residuales = 0,85 × 120 × 105 = 10,7 m³/día (0,124 L/s) · Harmon F = 4,24 → Qmáx = 0,53 L/s<br>
+      Negras 30 % = 3,2 m³/día · Grises 70 % = 7,5 m³/día<br>
+      Tanque séptico (NBR 7229): V = 1 000 + N·(C·T + K·Lf) = 1 000 + 105 × (30,6 × 0,83 + 105 × 1) ≈ 14,7 m³<br>
+      FAFA (NBR 13969): V = 1,6·N·C·T = 1,6 × 105 × 30,6 × 0,92 ≈ 4,7 m³<br>
+      Sedimentador de grises = 7,5 × 0,5 día ≈ 3,7 m³<br>
+      Humedal: A = Q·ln(C₀/Cₑ)/k = 7,5 × ln(150/30) / 0,10 ≈ 121 m² (DBO₅ de 150 a 30 mg/L)<br>
+      Lluvia = 1 425 m² × 2,0 m × 0,85 = 2 422 m³/año ≈ 6,6 m³/día · Sanitarios = 25 % × 120 × 105 ≈ 3,1 m³/día
+    </div>
+  </details>
+
+  <footer>Preparado con TopoSat a partir del plano urbanístico del condominio, el modelo de elevación satelital SRTM y las coordenadas del documento del proyecto. Valores aproximados para un diseño previo.</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default"});</script>
+<script>
+// Trazados en coordenadas de píxel del plano (1197 × 752). El orden de los puntos es el sentido del flujo.
+const NS = 'http://www.w3.org/2000/svg', svg = document.getElementById('svg');
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const groups = {};
+['cotas','treat','grey','black','supply'].forEach(k => { const g = document.createElementNS(NS,'g'); g.id = 'g-' + k; svg.appendChild(g); groups[k] = g; });
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+
+function pipe(pts, layer, color, w, opts = {}){
+  const g = groups[layer];
+  el('polyline', {points: pts.map(p => p.join(',')).join(' '), fill:'none', stroke:'#fff', 'stroke-width': w + 3, 'stroke-linejoin':'round', 'stroke-linecap':'round', opacity:.85}, g);
+  el('polyline', {points: pts.map(p => p.join(',')).join(' '), fill:'none', stroke:color, 'stroke-width': w, 'stroke-linejoin':'round', 'stroke-linecap':'round', 'stroke-dasharray': opts.dash || 'none'}, g);
+  if (opts.arrows === false) return;
+  for (let i = 1; i < pts.length; i++){                       // flechas a lo largo de cada tramo
+    const [x0,y0] = pts[i-1], [x1,y1] = pts[i], L = Math.hypot(x1-x0, y1-y0); if (L < 30) continue;
+    const n = Math.max(1, Math.floor(L / 120)), a = Math.atan2(y1-y0, x1-x0) * 180 / Math.PI;
+    for (let k = 1; k <= n; k++){
+      const t = k / (n + 1), x = x0 + (x1-x0)*t, y = y0 + (y1-y0)*t;
+      el('path', {d:'M-6,-5 L5,0 L-6,5 Z', fill:color, stroke:'#fff', 'stroke-width':1, transform:`translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${a.toFixed(1)})`}, g);
+    }
+  }
+}
+function box(x, y, w, h, layer, color, label, opts = {}){
+  const g = groups[layer];
+  el('rect', {x, y, width:w, height:h, rx:3, fill: opts.fill || color, 'fill-opacity': opts.fo ?? .85, stroke:'#fff', 'stroke-width':1.5}, g);
+  if (label) text(x + w/2, y + h/2 + 4, label, g, {fill:'#fff', size:11, weight:700, halo:false});
+}
+function text(x, y, s, g, o = {}){
+  const t = el('text', {x, y, 'text-anchor': o.anchor || 'middle', 'font-family':'IBM Plex Sans, system-ui, sans-serif', 'font-size': o.size || 13,
+    'font-weight': o.weight || 600, fill: o.fill || '#18221e'}, g);
+  if (o.halo !== false){ t.setAttribute('stroke', '#fff'); t.setAttribute('stroke-width', 4); t.setAttribute('paint-order', 'stroke'); t.setAttribute('stroke-linejoin','round'); }
+  t.textContent = s; return t;
+}
+function callout(x, y, tx, ty, lines, g, color){
+  el('line', {x1:x, y1:y, x2:tx, y2:ty, stroke:color, 'stroke-width':1.5}, g);
+  lines.forEach((s, i) => text(tx, ty + 4 + i*15, s, g, {anchor: tx < x ? 'end' : 'start', size: i ? 12 : 13, weight: i ? 500 : 700, fill: i ? '#3c4842' : color}));
+}
+
+function draw(){
+  Object.values(groups).forEach(g => g.replaceChildren());
+  const SUP = css('--supply') || '#1f6fb2', BLK = '#7a4a24', GRY = '#5f6f80', TRT = '#2f7d4f', WARN = '#9a5b12';
+  const supply = SUP.startsWith('#5') ? '#1f6fb2' : SUP;   // el plano siempre es claro: usar los tonos del tema claro
+
+  // ---- Cotas y pendiente
+  const c = groups.cotas;
+  text(130, 300, '≈ 2 134,5 m', c, {fill:WARN, size:14, weight:700});
+  text(130, 316, 'occidente (alto)', c, {fill:WARN, size:12, weight:600});
+  text(1140, 660, '≈ 2 132,5 m', c, {fill:WARN, size:14, weight:700, anchor:'end'});
+  text(1140, 676, 'oriente (bajo)', c, {fill:WARN, size:12, weight:600, anchor:'end'});
+  // Norte
+  el('path', {d:'M1160,40 l-10,28 l10,-7 l10,7 Z', fill:'#18221e'}, c); text(1160, 35, 'N', c, {size:14, weight:700});
+
+  // ---- Aguas grises (centro de vía + 3 px)
+  pipe([[391,152],[391,465]], 'grey', GRY, 3.5);
+  pipe([[168,465],[703,465]], 'grey', GRY, 3.5);
+  pipe([[719,152],[719,452],[703,465]], 'grey', GRY, 3.5);
+  pipe([[683,745],[686,700],[703,515]], 'grey', GRY, 3.5);
+  pipe([[703,465],[703,512]], 'grey', GRY, 3.5, {arrows:false});
+  pipe([[703,512],[915,512],[915,481],[925,481]], 'grey', GRY, 3.5);
+
+  // ---- Aguas negras (centro de vía − 3 px)
+  pipe([[385,152],[385,459]], 'black', BLK, 3.5);
+  pipe([[168,459],[697,459]], 'black', BLK, 3.5);
+  pipe([[713,152],[713,447],[697,459]], 'black', BLK, 3.5);
+  pipe([[677,745],[680,700],[697,520]], 'black', BLK, 3.5);
+  pipe([[697,459],[697,520]], 'black', BLK, 3.5, {arrows:false});
+  pipe([[697,520],[925,520]], 'black', BLK, 3.5);
+
+  // ---- Tratamiento
+  const t = groups.treat;
+  el('rect', {x:915, y:432, width:200, height:118, rx:6, fill:TRT, 'fill-opacity':.08, stroke:TRT, 'stroke-width':1.5, 'stroke-dasharray':'5 4'}, t);
+  box(960, 442, 145, 52, 'treat', TRT, 'Humedal ≈ 120 m²', {fo:.55});
+  box(925, 470, 26, 22, 'treat', GRY, 'S', {fo:.95});
+  box(925, 506, 46, 24, 'treat', BLK, 'TS', {fo:.95});
+  box(976, 506, 24, 24, 'treat', BLK, 'F', {fo:.95});
+  box(1086, 506, 22, 20, 'treat', TRT, '', {fo:.95});
+  pipe([[951,481],[960,481]], 'treat', GRY, 3, {arrows:false});
+  pipe([[1000,518],[1086,516]], 'treat', BLK, 3);
+  pipe([[1105,468],[1112,468],[1112,506]], 'treat', TRT, 3);
+  pipe([[1097,526],[1097,560],[1160,560]], 'treat', TRT, 3, {dash:'7 5'});
+  callout(1160, 560, 1159, 590, ['Efluente', 'tratado'], t, TRT);
+  callout(940, 550, 950, 585, ['Planta de tratamiento', 'TS tanque séptico ≈ 15 m³', 'F filtro FAFA ≈ 5 m³', 'S sedimentador de grises ≈ 4 m³'], t, TRT);
+
+  // ---- Agua potable (andén, +12 px)
+  const S = supply;
+  box(758, 664, 56, 34, 'supply', S, 'Cisterna', {fo:.92});
+  pipe([[786,752],[786,698]], 'supply', S, 3, {dash:'6 4'});
+  text(800, 742, 'Acueducto (vía pública)', groups.supply, {anchor:'start', size:12, fill:S});
+  pipe([[758,686],[694,686],[709,500],[718,467],[728,440],[728,150]], 'supply', S, 3);
+  pipe([[718,474],[165,474]], 'supply', S, 3);
+  pipe([[400,474],[400,150]], 'supply', S, 3);
+  pipe([[728,434],[915,434],[945,405]], 'supply', S, 3);
+  pipe([[786,664],[786,655]], 'supply', S, 3, {arrows:false});
+  pipe([[806,664],[812,622]], 'supply', S, 3, {arrows:false});
+  callout(814, 680, 850, 655, ['Cisterna 25 m³', '2 bombas de 2 HP, presión constante'], groups.supply, S);
+
+  applyLayers();
+}
+const LAYERS = {lySupply:'supply', lyBlack:'black', lyGrey:'grey', lyTreat:'treat', lyCotas:'cotas'};
+function applyLayers(){ for (const id in LAYERS) groups[LAYERS[id]].style.display = document.getElementById(id).checked ? '' : 'none'; }
+for (const id in LAYERS) document.getElementById(id).addEventListener('change', applyLayers);
+draw();
+</script>
+
+</body>
+</html>

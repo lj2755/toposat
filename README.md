@@ -14,6 +14,7 @@ Levantamiento topográfico en el navegador con modelos de elevación satelital (
 
 - **`index.html`**: TopoSat. Área por rectángulo o polígono, curvas de nivel, perfiles, puntos GNSS y exportación a DXF, GeoJSON y CSV (UTM WGS84).
 - **`simulacion.html`**: simulación 3D del Condominio Pontezuela sobre el terreno real (MAGNA-SIRGAS, origen Bogotá).
+- **`aguas/index.html`**: diseño previo del sistema de aguas del condominio.
 - **`datos/`**: imagen satelital y elevación del sitio del condominio, ya descargadas para que la simulación cargue rápido.
 
 No necesita instalación ni servidor propio: son páginas estáticas.
@@ -27,6 +28,20 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 [![Perfil del terreno explicado: mapa del recorrido de A a B pasando por el condominio y gráfica de la altura en cada punto](img/toposat-perfil.png)](https://lj2755.github.io/toposat/)
 
 *Perfil del terreno de 1,09 km entre A (noroeste) y B (sureste), pasando por el condominio. Arriba, el recorrido en el mapa; abajo, la altura del terreno en cada punto: el punto más alto (2 145 m), el más bajo (2 118 m) y el condominio (2 130 m).*
+
+## Diseño previo del sistema de aguas
+
+**[Sistema de aguas del Condominio Pontezuela](https://lj2755.github.io/toposat/aguas/)** (`aguas/index.html`): anteproyecto conceptual de agua potable, aguas negras y grises por separado, planta de tratamiento y aprovechamiento de lluvia, con el esquema de redes sobre el plano y la memoria de cálculo resumida.
+
+| | Diseño previo |
+|---|---|
+| Población | 105 hab (21 viviendas × 5) |
+| Agua potable | 16,8 m³/día · cisterna de 25 m³ con bombeo a presión constante |
+| Aguas negras | 3,2 m³/día · tanque séptico ≈ 15 m³ + filtro anaerobio FAFA ≈ 5 m³ |
+| Aguas grises | 7,5 m³/día · trampas de grasa, sedimentador ≈ 4 m³ y humedal ≈ 120 m² |
+| Agua lluvia | ≈ 6,6 m³/día aprovechables · tanque de 2 m³ por casa |
+
+Es un predimensionamiento: no reemplaza el diseño hidrosanitario firmado por un ingeniero ni el permiso de vertimiento de CORNARE. Las redes y la planta también se ven en la [simulación 3D](https://lj2755.github.io/toposat/simulacion.html#aguas).
 
 ## Publicar en GitHub Pages
 
