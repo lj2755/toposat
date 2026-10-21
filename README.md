@@ -18,9 +18,9 @@ No necesita instalación ni servidor propio: son páginas estáticas.
 
 ## TopoSat en uso
 
-[![TopoSat con las curvas de nivel cada 5 m y el sombreado del relieve en un área de 98 ha alrededor del condominio](img/toposat-curvas.jpg)](https://lj2755.github.io/toposat/)
+[![TopoSat con el lindero del lote y curvas de nivel cada 2 m rotuladas sobre la imagen satelital](img/toposat-curvas.jpg)](https://lj2755.github.io/toposat/)
 
-*Área de 1,1 × 0,9 km alrededor del condominio: curvas de nivel cada 5 m (maestras cada 25 m), sombreado hipsométrico y lectura de coordenadas y cota bajo el cursor. Cotas entre 2 113 y 2 172 m s.n.m.*
+*Lote del condominio (lindero en amarillo) con curvas de nivel cada 2 m, coloreadas por cota y rotuladas sobre la línea: de 2 126 m (azul claro, al este) a 2 134 m (naranja, al oeste). Abajo, la lectura de coordenadas y cota bajo el cursor.*
 
 [![Perfil del terreno de 1,09 km trazado de noroeste a sureste pasando por el condominio, con su gráfica en el panel lateral](img/toposat-perfil.jpg)](https://lj2755.github.io/toposat/)
 
